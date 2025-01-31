@@ -1,28 +1,42 @@
 body {
+    background-color: #e8e8e7;
     margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: #000;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Noto Sans JP', sans-serif;
 }
 
-.container {
+header {
+    background-color: #e8e8e7;
+    padding: 50px 0; /* 縦の幅を広くする */
     text-align: center;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-h1 {
-    font-size: 2em;
-    color: #333;
+nav a {
+    color: #2d2a27;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 14px;
 }
 
-p {
-    font-size: 1.2em;
-    color: #666;
+nav a:hover {
+    text-decoration: underline;
+}
+
+.catchphrase {
+    color: #e8e8e7;
+    font-size: 48px; /* 文字をもっと大きくする */
+    position: absolute;
+    top: 150px; /* 位置をもう少し下に */
+    left: 50px; /* 位置をもう少し右に */
+}
+
+.background-image {
+    width: 100%;
+    display: block;
+}
+
+/* ウィンドウの横サイズが小さい時の背景画像 */
+@media (max-width: 767px) {
+    .background-image {
+        content: url('image/back_iphone.JPG');
+    }
 }
