@@ -3,7 +3,7 @@ body {
     margin: 0;
     font-family: 'Noto Sans JP', sans-serif;
     position: relative;
-    overflow: hidden; /* 背景画像のぼかしがはみ出さないようにする */
+    overflow-x: hidden; /* 横方向のスクロールを禁止 */
 }
 
 header {
@@ -66,4 +66,31 @@ nav a:hover {
     .background-image {
         content: url('image/back_iphone.JPG');
     }
+}
+
+.members {
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    top: 700px;
+    bottom: 20px;
+    right: 100px;
+    z-index: 2; /* 背景画像の上に表示されるようにする */
+}
+
+.member {
+    text-align: center;
+    margin: 0 10px;
+}
+
+.member img {
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+}
+
+.member-name {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #e8e8e7;
 }
