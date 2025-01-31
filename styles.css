@@ -2,12 +2,16 @@ body {
     background-color: #e8e8e7;
     margin: 0;
     font-family: 'Noto Sans JP', sans-serif;
+    position: relative;
+    overflow: hidden; /* 背景画像のぼかしがはみ出さないようにする */
 }
 
 header {
     background-color: #e8e8e7;
     padding: 50px 0; /* 縦の幅を広くする */
     text-align: center;
+    position: relative; /* 背景画像のぼかしに影響されないようにする */
+    z-index: 1; /* 背景画像の上に表示されるようにする */
 }
 
 nav a {
@@ -22,20 +26,43 @@ nav a:hover {
 }
 
 .catchphrase {
-    color: #e8e8e7;
+    color: #e8e8e7; /* 文字色を変更 */
     font-size: 48px; /* 文字をもっと大きくする */
-    position: absolute;
+    position: relative; /* 背景画像のぼかしに影響されないようにする */
+    z-index: 1; /* 背景画像の上に表示されるようにする */
     top: 150px; /* 位置をもう少し下に */
-    left: 50px; /* 位置をもう少し右に */
+    left: 100px; /* 位置をもう少し右に */
+    opacity: 0;
+    transform: translateX(10%);
+    transition: opacity 1s ease-out, transform 1s ease-out; /* アニメーション時間を2秒に変更 */
+}
+
+.catchphrase.slide-in {
+    opacity: 1;
+    transform: translateX(0);
 }
 
 .background-image {
     width: 100%;
     display: block;
+    position: absolute;
+    top: 100px; /* 画像をもう少し下に配置 */
+    left: 0;
+    z-index: 0; /* 他の要素の背面に表示されるようにする */
+    transition: filter 2s ease-out; /* フィルターのトランジションを追加 */
+}
+
+.background-image.blur {
+    filter: blur(5px); /* ぼかし効果を追加 */
 }
 
 /* ウィンドウの横サイズが小さい時の背景画像 */
 @media (max-width: 767px) {
+    .catchphrase {
+        top: 30px;
+        left: 50px; /* 位置をもう少し左に */
+        font-size: 30px;
+    }
     .background-image {
         content: url('image/back_iphone.JPG');
     }
