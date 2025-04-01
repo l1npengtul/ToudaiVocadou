@@ -1,2 +1,3 @@
-# ToudaiVocadou
-東京大学ボカロP同好会のウェブサイトです。
+# アクセス
+以下のリンクにアクセスしてください。
+https://seeyoumayday.github.io/ToudaiVocadou/
