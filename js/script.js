@@ -69,6 +69,42 @@ document.addEventListener('DOMContentLoaded', function() {
             youtubeId: "BAr50BKIQ8Y",
             creator: "Auauo",
             description: "なんか知らないけど一番伸びてるやつ！なんで？"
+        },
+        {
+            title: "深海",
+            youtubeId: "etUgny3nVrI",
+            creator: "変曲点",
+            description: "初音ミクオリジナル曲です。海の中をイメージして曲を作りました。"
+        },
+        {
+            title: "神の嗜好品",
+            youtubeId: "tEVnFeV-vwo",
+            creator: "変曲点",
+            description: "鏡音リンオリジナル曲です。シンセサイザーの電子音などを使って曲を作りました。"
+        },
+        {
+            title: "退化 / 知声",
+            youtubeId: "oBVR_R-_XTE",
+            creator: "半防隊",
+            description: "想像が退化！！"
+        },
+        {
+            title: "3y3 / 知声",
+            youtubeId: "nKL9FC0sVuo",
+            creator: "半防隊",
+            description: "👁️👁️"
+        },
+        {
+            title: "三森 - 箱庭の空 (feat.可不)",
+            youtubeId: "iQdH-3h6oXY",
+            creator: "三森",
+            description: "決意と共に歩いていくような冒険ソングです。"
+        },
+        {
+            title: "三森 - 盲目少女と錬金術師 (feat.初音ミク)",
+            youtubeId: "UCpbXytJIA4",
+            creator: "三森",
+            description: "楽しくも切ないおとぎ話のようなサウンドを目指して作りました。"
         }
     ];
     
@@ -110,7 +146,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 width: '640',
                 videoId: selectedWork.youtubeId,
                 playerVars: {
-                    'autoplay': 0,
+                    'autoplay': 1,  // 自動再生を有効化
+                    'mute': 1,      // ミュートを有効化（自動再生に必要）
                     'controls': 1,
                     'rel': 0,
                     'fs': 1
