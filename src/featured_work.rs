@@ -1,0 +1,21 @@
+use std::collections::HashSet;
+use serde::{Deserialize, Serialize};
+use url::Url;
+use crate::die_linky::SocialLink;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FeaturedWorkMeta {
+    pub title: String,
+    pub description: String,
+    pub author: String,
+    pub additional_publish_links: HashSet<SocialLink>,
+
+    pub video: FeatureUpload,
+}
+
+#[derive(Clone, Debug, Hash, PartialEq)]
+pub enum FeatureUpload {
+    AudioFile(String),
+    VideoFile(String),
+    YouTube(Url),
+}
