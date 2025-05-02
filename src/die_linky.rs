@@ -1,7 +1,10 @@
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
+use eyre::Report;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Clone, Debug, Hash, PartialOrd, PartialEq)]
+#[derive(Clone, Debug, Hash, PartialOrd, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SocialLinkType {
     Twitter,
     Xitter,
@@ -9,13 +12,60 @@ pub enum SocialLinkType {
     Youtube,
     NicoDouga,
     Soundcloud,
-    SelfHostedSite(Url),
     Github,
     LinkTree,
+    Spotify,
+    TikTok,
+    Instagram,
     OtherUnknown(String),
 }
 
-#[derive(Clone, Debug, Hash, PartialOrd, PartialEq)]
+impl SocialLinkType {
+    pub fn to_svg_icon(&self) -> &str {
+        match self {
+            SocialLinkType::Twitter => "twitter.svg",
+            SocialLinkType::Xitter => "twitter.svg", // FIXME
+            SocialLinkType::Bluesky => "bluesky.svg",
+            SocialLinkType::Youtube => "youtube.svg",
+            SocialLinkType::NicoDouga => "niconico.svg",
+            SocialLinkType::Soundcloud => "soundcloud.svg",
+            SocialLinkType::Github => "github.svg",
+            SocialLinkType::LinkTree => "linktree.svg",
+            SocialLinkType::Spotify => "spotify.svg",
+            SocialLinkType::TikTok => "tiktok.svg",
+            SocialLinkType::Instagram => "instagram.svg",
+            SocialLinkType::OtherUnknown(_) => "link.svg",
+        }
+    }
+}
+
+impl FromStr for SocialLinkType {
+    type Err = eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // parse into a URL
+        let url = Url::parse(s)?;
+        let domain = url.domain().ok_or(Report::msg("Bad URL"))?;
+        let url_type = match domain {
+            "twitter.com" => SocialLinkType::Twitter,
+            "x.com" => SocialLinkType::Xitter,
+            "bsky.app" => SocialLinkType::Bluesky,
+            "youtube.com" | "www.youtube.com" => SocialLinkType::Youtube,
+            "soundcloud.com" => SocialLinkType::Youtube,
+            "nicovideo.jp" => SocialLinkType::NicoDouga,
+            "github.com" => SocialLinkType::Github,
+            "linktree.com" => SocialLinkType::LinkTree,
+            "spotify.com" => SocialLinkType::Spotify,
+            "tiktok.com" => SocialLinkType::TikTok,
+            "instagram.com" => SocialLinkType::Instagram,
+            other => SocialLinkType::OtherUnknown(other.to_string()),
+        };
+
+        Ok(url_type)
+    }
+}
+
+#[derive(Clone, Debug, Hash, PartialOrd, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ProfileOrPost {
     Profile(String),
     Post(String),
@@ -29,7 +79,7 @@ impl Display for ProfileOrPost {
     }
 }
 
-#[derive(Clone, Debug, Hash, PartialOrd, PartialEq)]
+#[derive(Clone, Debug, Hash, PartialOrd, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SocialLink {
     pub social_link_type: SocialLinkType,
     pub profile_or_post: ProfileOrPost,
@@ -58,9 +108,6 @@ impl Display for SocialLink {
             SocialLinkType::Soundcloud => {
                 "https://soundcloud.com"
             }
-            SocialLinkType::SelfHostedSite(site) => {
-                site.as_str()
-            }
             SocialLinkType::Github => {
                 "https://github.com"
             }
@@ -70,6 +117,7 @@ impl Display for SocialLink {
             SocialLinkType::OtherUnknown(other) => {
                 &other
             }
+            _ => ""
         };
 
         write!(f, "{url}/{path}")

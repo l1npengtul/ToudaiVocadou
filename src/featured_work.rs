@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
-use url::Url;
 use crate::die_linky::SocialLink;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -13,9 +12,9 @@ pub struct FeaturedWorkMeta {
     pub video: FeatureUpload,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq)]
+#[derive(Clone, Debug, Hash, PartialEq, Serialize, Deserialize)]
 pub enum FeatureUpload {
     AudioFile(String),
     VideoFile(String),
-    YouTube(Url),
+    YouTube(String),
 }

@@ -53,7 +53,7 @@ NIX_BINTOOLS_WRAPPER_TARGET_BUILD_x86_64_unknown_linux_gnu='1'
 export NIX_BINTOOLS_WRAPPER_TARGET_BUILD_x86_64_unknown_linux_gnu
 NIX_BINTOOLS_WRAPPER_TARGET_HOST_x86_64_unknown_linux_gnu='1'
 export NIX_BINTOOLS_WRAPPER_TARGET_HOST_x86_64_unknown_linux_gnu
-NIX_BUILD_CORES='16'
+NIX_BUILD_CORES='14'
 export NIX_BUILD_CORES
 NIX_CC='/nix/store/q87df3dw0x7r1k9gagir9a5sdi3gmw4a-clang-wrapper-19.1.7'
 export NIX_CC
@@ -183,7 +183,7 @@ declare -a envHostTargetHooks=('ccWrapper_addCVars' 'bintoolsWrapper_addLDVars' 
 declare -a envTargetTargetHooks=()
 declare -a fixupOutputHooks=('if [ -z "${dontPatchELF-}" ]; then patchELF "$prefix"; fi' 'if [[ -z "${noAuditTmpdir-}" && -e "$prefix" ]]; then auditTmpdir "$prefix"; fi' 'if [ -z "${dontGzipMan-}" ]; then compressManPages "$prefix"; fi' '_moveLib64' '_moveSbin' '_moveSystemdUserUnits' 'patchShebangsAuto' '_pruneLibtoolFiles' '_doStrip' )
 flag='-L/nix/store/z5995dzahxwj4k9ffixasw6mwjk592sd-clang-19.1.7-lib/lib'
-guess='16'
+guess='14'
 iframework_seen=''
 initialPath='/nix/store/yh6qg1nsi5h2xblcr67030pz58fsaxx3-coreutils-9.6 /nix/store/xq5f95pp297afc2xjgrmhmf9w631qp7m-findutils-4.10.0 /nix/store/wj1c3gsiajabnq50ifxqnlv60i5rhqj7-diffutils-3.10 /nix/store/xhql0ilzbiqwnmz4z8y0phk611wynxf2-gnused-4.9 /nix/store/40yifhx34v4g4llrdn3v2ag8w02j10fv-gnugrep-3.11 /nix/store/r66s4mjwqi7zkqqyry5yhhv0wm5rw96a-gawk-5.3.1 /nix/store/hfkclq54gppdb9fshnkwfdph1safyvli-gnutar-1.35 /nix/store/4q2sv4sqb7y8y4pp3n9bf2aabmgqmwmy-gzip-1.13 /nix/store/pcf18502sz0b25qya2lzm5f7wy0pd7a6-bzip2-1.0.8-bin /nix/store/zzgldw3dwyhzn7sw9cyq7d7k57h0yx46-gnumake-4.4.1 /nix/store/58br4vk3q5akf4g8lx0pqzfhn47k3j8d-bash-5.2p37 /nix/store/lf3ln60nya8xmkymabap9i7gqj60k9py-patch-2.7.6 /nix/store/f246qzchy7zy00z1f42dqz9jiwcf5n7f-xz-5.6.4-bin /nix/store/hyp4b779nh5y4m48zvvhd4y3z1gm8hd5-file-5.46'
 isystem_seen=''
