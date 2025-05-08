@@ -1,8 +1,6 @@
 name = "l1npengtul"
 ascii_name = "l1npengtul"
 
-department = "教養学部文科三類PEAK"
-position = "メンバー"
 entry_year = 2024
 short = "魚。"
 

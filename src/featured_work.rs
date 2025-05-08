@@ -1,6 +1,6 @@
-use std::collections::HashSet;
-use serde::{Deserialize, Serialize};
 use crate::die_linky::SocialLink;
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FeaturedWorkMeta {

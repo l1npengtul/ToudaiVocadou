@@ -1,13 +1,15 @@
-use maud::{html, Markup};
 use crate::metadata::Metadata;
-use crate::RENDER_SITE;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
+use crate::{Data, RENDER_SITE, image};
+use hauchiwa::Sack;
+use maud::{Markup, html};
 
-pub fn index() -> Markup {
+pub fn index(sack: &Sack<Data>) -> Markup {
     let meta = Metadata {
-        page_title: "東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club".to_string(),
-        page_image: Some("images/circle-photo.jpeg".to_string()),
+        page_title: "東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club"
+            .to_string(),
+        page_image: Some(image(sack, "images/circle-photo.jpg")),
         canonical_link: format!("{}/", RENDER_SITE),
         section: Sections::Home,
         author: None,
@@ -33,7 +35,7 @@ pub fn index() -> Markup {
                     p { "まだ設立したばかりのこのサークルで、一緒に音楽を楽しみながら成長しませんか？（サークル代表　三森）"}
                 }
                 .about-image {
-                    img .img-placeholder src="images/circle-photo.jpeg" alt="サークル活動の様子";
+                    img .img-placeholder src="images/circle-photo.jpg" alt="サークル活動の様子";
                 }
             }
         }
@@ -96,7 +98,7 @@ pub fn index() -> Markup {
 
     };
 
-    base(&meta, content)
+    base(sack, &meta, content)
 }
 
 fn activity(title: &str, timeframe: &str, description: &str) -> Markup {

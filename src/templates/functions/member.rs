@@ -1,4 +1,4 @@
-use maud::{html, Markup};
+use maud::{Markup, html};
 
 pub fn member(to_link: &str) -> Markup {
     html! {

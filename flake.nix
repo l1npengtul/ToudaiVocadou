@@ -37,6 +37,8 @@
               rustPlatform.bindgenHook
               xmlstarlet
               rustup
+              simple-http-server
+              http-server
           ]);
 
           env.RUST_SRC_PATH = "${rustbin}/lib/rustlib/src/rust/library";

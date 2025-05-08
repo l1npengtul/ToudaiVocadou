@@ -1,7 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
-use eyre::Report;
-use serde::{Deserialize, Serialize};
+use anyhow::Error;
 use url::Url;
 
 #[derive(Clone, Debug, Hash, PartialOrd, PartialEq, Eq, Serialize, Deserialize)]
@@ -40,19 +40,19 @@ impl SocialLinkType {
 }
 
 impl FromStr for SocialLinkType {
-    type Err = eyre::Report;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // parse into a URL
         let url = Url::parse(s)?;
-        let domain = url.domain().ok_or(Report::msg("Bad URL"))?;
+        let domain = url.domain().ok_or(Error::msg("Bad URL"))?;
         let url_type = match domain {
             "twitter.com" => SocialLinkType::Twitter,
             "x.com" => SocialLinkType::Xitter,
             "bsky.app" => SocialLinkType::Bluesky,
             "youtube.com" | "www.youtube.com" => SocialLinkType::Youtube,
             "soundcloud.com" => SocialLinkType::Youtube,
-            "nicovideo.jp" => SocialLinkType::NicoDouga,
+            "nicovideo.jp" | "www.nicovideo.jp" => SocialLinkType::NicoDouga,
             "github.com" => SocialLinkType::Github,
             "linktree.com" => SocialLinkType::LinkTree,
             "spotify.com" => SocialLinkType::Spotify,
@@ -73,9 +73,13 @@ pub enum ProfileOrPost {
 
 impl Display for ProfileOrPost {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            ProfileOrPost::Profile(p) | ProfileOrPost::Post(p) => p,
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                ProfileOrPost::Profile(p) | ProfileOrPost::Post(p) => p,
+            }
+        )
     }
 }
 
@@ -90,34 +94,16 @@ impl Display for SocialLink {
         let path = self.profile_or_post.to_string();
 
         let url = match &self.social_link_type {
-            SocialLinkType::Twitter => {
-                "https://twitter.com"
-            }
-            SocialLinkType::Xitter => {
-                "https://x.com"
-            }
-            SocialLinkType::Bluesky => {
-                "https://bsky.app"
-            }
-            SocialLinkType::Youtube => {
-                "https://www.youtube.com"
-            }
-            SocialLinkType::NicoDouga => {
-                "https://nicovideo.jp"
-            }
-            SocialLinkType::Soundcloud => {
-                "https://soundcloud.com"
-            }
-            SocialLinkType::Github => {
-                "https://github.com"
-            }
-            SocialLinkType::LinkTree => {
-                "https://linktr.ee"
-            }
-            SocialLinkType::OtherUnknown(other) => {
-                &other
-            }
-            _ => ""
+            SocialLinkType::Twitter => "https://twitter.com",
+            SocialLinkType::Xitter => "https://x.com",
+            SocialLinkType::Bluesky => "https://bsky.app",
+            SocialLinkType::Youtube => "https://www.youtube.com",
+            SocialLinkType::NicoDouga => "https://nicovideo.jp",
+            SocialLinkType::Soundcloud => "https://soundcloud.com",
+            SocialLinkType::Github => "https://github.com",
+            SocialLinkType::LinkTree => "https://linktr.ee",
+            SocialLinkType::OtherUnknown(other) => &other,
+            _ => "",
         };
 
         write!(f, "{url}/{path}")

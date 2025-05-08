@@ -1,10 +1,10 @@
-use std::str::FromStr;
-use maud::{html, Render};
+use crate::die_linky::SocialLinkType;
+use maud::{Render, html};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use url::Url;
 use urlencoding::encode;
-use crate::die_linky::SocialLinkType;
 
 pub fn embed(link: &str) -> impl Render {
     if link.ends_with(".mp3") || link.ends_with(".ogg") || link.ends_with(".wav") {
@@ -15,11 +15,14 @@ pub fn embed(link: &str) -> impl Render {
                     "ファイルをダウンロードする"
                 }
             }
-        }
+        };
     }
 
     let url_type = SocialLinkType::from_str(link).unwrap();
     let url_parse = Url::parse(link).unwrap();
+
+    println!("processing: {}", link);
+    println!("link type: {:?}", url_type);
 
     match url_type {
         SocialLinkType::Twitter | SocialLinkType::Xitter => {
@@ -32,7 +35,11 @@ pub fn embed(link: &str) -> impl Render {
         }
         SocialLinkType::Bluesky => {
             let link_encoded = encode(link);
-            let bluesky_oembed = reqwest::blocking::get(format!("https://embed.bsky.app/oembed?url={}", link_encoded)).unwrap();
+            let bluesky_oembed = reqwest::blocking::get(format!(
+                "https://embed.bsky.app/oembed?url={}",
+                link_encoded
+            ))
+            .unwrap();
 
             if bluesky_oembed.status() != StatusCode::OK {
                 panic!("failed to get bluesky oembed - try building again or fixing this url!")
@@ -47,13 +54,17 @@ pub fn embed(link: &str) -> impl Render {
                     a href=(link) {
                         img src=(image) alt=(link);
                     }
-                }
+                };
             }
 
             panic!("returned oembed did not match any known items.")
         }
         SocialLinkType::Youtube => {
-            let youtube_video_id = url_parse.query_pairs().find(|(key, _)| key == "v").unwrap().1;
+            let youtube_video_id = url_parse
+                .query_pairs()
+                .find(|(key, _)| key == "v")
+                .unwrap()
+                .1;
             let embed_link = format!("https://www.youtube.com/embed/{youtube_video_id}");
 
             html! {
@@ -63,8 +74,13 @@ pub fn embed(link: &str) -> impl Render {
             }
         }
         SocialLinkType::NicoDouga => {
-            let nnd_video_id = url_parse.path_segments().unwrap().find(|segment| segment.starts_with("sm")).unwrap();
-            let nnd_video_link = format!("https://embed.nicovideo.jp/watch/{nnd_video_id}/script?w=640&h=360");
+            let nnd_video_id = url_parse
+                .path_segments()
+                .unwrap()
+                .find(|segment| segment.starts_with("sm"))
+                .unwrap();
+            let nnd_video_link =
+                format!("https://embed.nicovideo.jp/watch/{nnd_video_id}/script?w=640&h=360");
             html! {
                 .youtube-embed-container {
                     script type="application/javascript" src=(nnd_video_link);
@@ -76,14 +92,13 @@ pub fn embed(link: &str) -> impl Render {
                 }
             }
         }
-        _ => panic!("unsupported embed type.")
+        _ => panic!("unsupported embed type."),
     }
 
     // soundcloud embed
     // twitter embed
     // youtube embed
     // nicovideo embed
-
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
