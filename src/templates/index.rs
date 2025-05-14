@@ -1,0 +1,141 @@
+use crate::metadata::Metadata;
+use crate::templates::base::base;
+use crate::templates::partials::navbar::Sections;
+use crate::{Data, RENDER_SITE, image};
+use hauchiwa::Sack;
+use maud::{Markup, html};
+
+pub fn index(sack: &Sack<Data>) -> Markup {
+    let meta = Metadata {
+        page_title: "東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club"
+            .to_string(),
+        page_image: Some(image(sack, "images/circle-photo.jpg")),
+        canonical_link: format!("{}/", RENDER_SITE),
+        section: Sections::Home,
+        author: None,
+        date: None,
+    };
+
+    let content = html! {
+        section #hero {
+            .container {
+                h2 { "ボカロ、作ろう。" }
+                p { "ボーカロイド楽曲の制作を通じて交流するサークルです。" }
+                a href="#join" .btn { "入会案内" }
+            }
+        }
+
+        section #about {
+            .container {
+                h2 { "サークル紹介" }
+                .about-content {
+                    p { "東京大学ボカロP同好会は、ボーカロイド楽曲の制作を通じて交流するサークルです。" }
+                    p { "週一の活動では、作曲のアイデアや課題を共有し、フィードバックし合うことで、一人では気づけなかった新しい発見があります。" }
+                    p { "さらに、サークルとして活動が広がることで、楽曲がより多くの人に届くチャンスにも繋がります。" }
+                    p { "まだ設立したばかりのこのサークルで、一緒に音楽を楽しみながら成長しませんか？（サークル代表　三森）"}
+                }
+                .about-image {
+                    img .img-placeholder src="images/circle-photo.jpg" alt="サークル活動の様子" style="height: 100%";
+                }
+            }
+        }
+
+        section #activities {
+            .container {
+                h2 { "活動内容" }
+                .activity-list {
+                    (activity("ディスコード上でのオンライン会合", "毎週土曜日 21:00〜", "作品の進捗報告や技術共有、創作のヒントなどを話し合います。"))
+                    (activity("楽曲発表会", "月1回ほど", "主にオフラインで、自分の作った楽曲を共有し、部員間で作曲のノウハウを共有したり、自分の曲にフィードバックを受け取ったりします。"))
+                    (activity("各種レクリエーション", "不定期", "ピクニックやボカロに関するクイズ大会などで交流を深めます。"))
+                }
+            }
+        }
+
+        section #featured-work {
+            .container {
+                h2 { "注目作品" }
+                p .section-description {
+                    "メンバーの作品をランダムにピックアップしてご紹介します。リロードするたびに違う作品が表示されます。"
+                }
+                #featured-work-container {
+                    .youtube-embed-container #embed {
+                        ""
+                    }
+                    .featured-work-info {
+                        a href="" #featured-work-link {
+                            h3 #featured-work-title {
+                                "曲名"
+                            }
+                        }
+                        p {
+                            "制作:"
+                            a #featured-work-creator href="" {
+                                "メンバー名"
+                            }
+                        }
+                        p #featured-work-description {
+                            ""
+                        }
+                        .back-button{
+                            a href="/works.html" {
+                                "曲一覧になる"
+                            }
+                        }
+                        
+                        .back-button{
+                            p #reload {
+                                "曲をリロード"
+                            }
+                        }
+                    }
+                    
+                    
+                }
+            }
+        }
+
+        section #join {
+            .container {
+                h2 { "入会案内" }
+                .join-info {
+                    p { "東京大学の学生であれば、学部・学年を問わず入会できます。音楽制作の経験がなくても大歓迎です！" }
+                    p { "入会を希望される方は、下記のXアカウントまでご連絡ください。" }
+                    p .contact-email {
+                        a href="https://twitter.com/toudaivocadou/" {
+                            "@toudaivocadou"
+                        }
+                    }
+                    p { "または、新歓期間中の説明会にお越しください。" }
+                    .join-details {
+                        h3 { "説明会情報" }
+                        p { "日時: 4月12日 18:00〜18:30" }
+                        p { "説明会の参加方法に関しましては、公式Xアカウントで随時お知らせいたします。" }
+                        p { "また、日時に関しても変更される場合がありますので、公式Xアカウントからの情報を随時ご確認ください。" }
+                    }
+                }
+            }
+        }
+
+        // section #news {
+        //     .container {
+        //         h2 { "最新ニュース" }
+        //         .about-content {
+        //             // TODO: 最新ニュースの筋、リンク
+        //         }
+        //     }
+        // }
+
+    };
+
+    base(sack, &meta, content)
+}
+
+fn activity(title: &str, timeframe: &str, description: &str) -> Markup {
+    html! {
+        .activity-item {
+            h3 { (title) }
+            p { (timeframe) }
+            p { (description) }
+        }
+    }
+}
