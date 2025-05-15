@@ -102,7 +102,7 @@ impl Display for SocialLink {
             SocialLinkType::Soundcloud => "https://soundcloud.com",
             SocialLinkType::Github => "https://github.com",
             SocialLinkType::LinkTree => "https://linktr.ee",
-            SocialLinkType::OtherUnknown(other) => &other,
+            SocialLinkType::OtherUnknown(other) => other,
             _ => "",
         };
 

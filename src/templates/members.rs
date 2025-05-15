@@ -15,8 +15,8 @@ use std::cmp::Ordering;
 pub fn members(sack: &Sack<Data>, site_map: &SiteMap) -> Markup {
     let mut site_members = site_map.members.clone();
     site_members.sort_by(|a, b| {
-        let a_str = a.position.clone().unwrap_or_else(|| "".to_string());
-        let b_str = b.position.clone().unwrap_or_else(|| "".to_string());
+        let a_str = a.position.clone().unwrap_or_default();
+        let b_str = b.position.clone().unwrap_or_default();
 
         if a_str == "代表" {
             return Ordering::Less;
@@ -153,7 +153,7 @@ pub fn member_detail(sack: &Sack<Data>, member: &MemberMeta, content: &str) -> M
 
 pub fn featured_work_item_detail(item: &MemberFeaturedWork) -> Markup {
     let link_hash = seahash::hash(item.link.as_bytes()).to_le_bytes();
-    let base64 = BASE64_STANDARD_NO_PAD.encode(&link_hash);
+    let base64 = BASE64_STANDARD_NO_PAD.encode(link_hash);
 
     html! {
         .work-item-detail id=(base64) {
@@ -166,7 +166,7 @@ pub fn featured_work_item_detail(item: &MemberFeaturedWork) -> Markup {
                     p { (desc) }
                 }
             }
-            @if item.__DO_NOT_USE_kuwasiku {
+            @if item.__do_not_use_kuwasiku {
                 .back-button{
                     a href=(format!("/works/{}.html", base64)) {
                         "詳しく見る"

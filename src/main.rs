@@ -31,8 +31,8 @@ mod sitemap;
 pub mod templates;
 mod work;
 
-pub const FRONT_MATTER_SPLIT: &'static str = "===";
-pub const RENDER_SITE: &'static str = "toudaivocadou.org";
+pub const FRONT_MATTER_SPLIT: &str = "===";
+pub const RENDER_SITE: &str = "toudaivocadou.org";
 
 pub struct Data;
 
@@ -187,7 +187,7 @@ fn main() {
                                 title: featured.title.clone(),
                                 description: featured.description.clone(),
                                 link: featured.link.clone(),
-                                __DO_NOT_USE_kuwasiku: true,
+                                __do_not_use_kuwasiku: true,
                             },
                             None => {
                                 featured_works_leftovers

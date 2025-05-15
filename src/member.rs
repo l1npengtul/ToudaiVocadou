@@ -11,7 +11,7 @@ pub struct MemberFeaturedWork {
     pub link: String,
     #[allow(non_snake_case)]
     #[serde(skip_serializing, default)]
-    pub __DO_NOT_USE_kuwasiku: bool,
+    pub __do_not_use_kuwasiku: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
