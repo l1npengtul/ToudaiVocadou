@@ -8,8 +8,8 @@ jobs:
   examine-changed:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4t
-      - uses: dorny/paths-filter
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
