@@ -93,7 +93,7 @@ jobs:
       - check-rustfmt
       - lint-css
       - lint-js
-    if: ${{ needs.examine-changed.outputs.markdown == 'true' || needs.examine-changed.outputs.js == 'true' || needs.examine-changed.outputs.css == 'true' || needs.examine-changed.outputs.rust == 'true' || contains(github.event.head_commit.message, '[REBUILD]')}}
+    if: ${{ needs.examine-changed.outputs.markdown == 'true' || needs.examine-changed.outputs.js == 'true' || needs.examine-changed.outputs.css == 'true' || needs.examine-changed.outputs.rust == 'true' || contains(github.event.head_commit.message, '[REBUILD]') || always() }}
 
     steps:
       - uses: actions/checkout@v4
