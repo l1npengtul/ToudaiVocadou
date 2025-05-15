@@ -81,15 +81,15 @@ pub fn index(sack: &Sack<Data>) -> Markup {
                                 "曲一覧になる"
                             }
                         }
-                        
+
                         .back-button{
                             p #reload {
                                 "曲をリロード"
                             }
                         }
                     }
-                    
-                    
+
+
                 }
             }
         }

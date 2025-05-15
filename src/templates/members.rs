@@ -6,11 +6,11 @@ use crate::templates::functions::embed::embed;
 use crate::templates::functions::sns::sns_icon;
 use crate::templates::partials::navbar::Sections;
 use crate::{Data, image};
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD_NO_PAD;
 use hauchiwa::Sack;
 use maud::{Markup, PreEscaped, html};
 use std::cmp::Ordering;
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD_NO_PAD;
 
 pub fn members(sack: &Sack<Data>, site_map: &SiteMap) -> Markup {
     let mut site_members = site_map.members.clone();
@@ -41,12 +41,11 @@ pub fn members(sack: &Sack<Data>, site_map: &SiteMap) -> Markup {
         } else if a.position.is_none() && b.position.is_some() {
             return Ordering::Greater;
         } else if a.position == b.position {
-            return a.name.cmp(&b.name)
+            return a.name.cmp(&b.name);
         }
 
         a.name.cmp(&b.name)
     });
-
 
     let inner = html! {
         section #members-hero {

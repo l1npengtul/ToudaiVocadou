@@ -7,7 +7,7 @@ use crate::templates::partials::navbar::Sections;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use hauchiwa::Sack;
-use maud::{Markup, html, PreEscaped};
+use maud::{Markup, PreEscaped, html};
 use std::collections::HashMap;
 
 pub fn news_posts(

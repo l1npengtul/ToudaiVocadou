@@ -14,11 +14,11 @@ use crate::work::{DisplayWorkMeta, WorkMeta};
 use camino::Utf8PathBuf;
 use clap::{Parser, ValueEnum};
 use hauchiwa::{Collection, Processor, Sack, Website};
+use maud::Render;
 use minijinja::Environment;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Read;
-use maud::Render;
 
 mod die_linky;
 mod featured_work;
@@ -95,7 +95,6 @@ fn main() {
             // published on some random date (we are NOT reaching out to the API to get the proper date - some future poor sap can do that)
             // 5. gather all of this and put it in a JSON, which then the client side JS can consume to power the random work button.
 
-
             let works = sack.query_content::<WorkMeta>("*").unwrap();
             if !works
                 .iter()
@@ -104,7 +103,10 @@ fn main() {
                 panic!("work contains bad author.")
             }
 
-            let works_urls = works.iter().map(|work| work.meta.link.clone()).collect::<HashSet<String>>();
+            let works_urls = works
+                .iter()
+                .map(|work| work.meta.link.clone())
+                .collect::<HashSet<String>>();
 
             let news_posts = sack.query_content::<PostMeta>("*").unwrap();
             if !news_posts
@@ -174,11 +176,13 @@ fn main() {
             let member_detail = members
                 .into_iter()
                 .map(|member_page| -> Result<(String, String), anyhow::Error> {
-
                     let mut member_page_meta = member_page.meta.clone();
 
-                    member_page_meta.featured_works = member_page.meta.featured_works.iter().map(|featured| {
-                        match works_urls.get(&featured.link) {
+                    member_page_meta.featured_works = member_page
+                        .meta
+                        .featured_works
+                        .iter()
+                        .map(|featured| match works_urls.get(&featured.link) {
                             Some(_) => MemberFeaturedWork {
                                 title: featured.title.clone(),
                                 description: featured.description.clone(),
@@ -186,11 +190,12 @@ fn main() {
                                 __DO_NOT_USE_kuwasiku: true,
                             },
                             None => {
-                                featured_works_leftovers.push((featured.clone(), member_page_meta.ascii_name.clone()));
+                                featured_works_leftovers
+                                    .push((featured.clone(), member_page_meta.ascii_name.clone()));
                                 featured.clone()
                             }
-                        }
-                    }).collect();
+                        })
+                        .collect();
 
                     let content_html = parse_and_format(
                         &sack,
@@ -255,31 +260,33 @@ fn main() {
 
             // generate the work list
 
-            let mut display_works = works_list.into_iter().map(|w| {
-                DisplayWorkMeta {
+            let mut display_works = works_list
+                .into_iter()
+                .map(|w| DisplayWorkMeta {
                     title: w.title,
                     description: w.short,
                     on_site_link: work_reference(&w.link),
                     embed_html: embed(&w.link).render().into_string(),
                     author_link: ascii_name_to_author.get(&w.author).unwrap().clone(),
                     author_displayname: w.author,
-                }
-            }).collect::<Vec<DisplayWorkMeta>>();
+                })
+                .collect::<Vec<DisplayWorkMeta>>();
 
             display_works.extend(
-                featured_works_leftovers.into_iter().map(|(featured, author)| {
-                    DisplayWorkMeta {
+                featured_works_leftovers
+                    .into_iter()
+                    .map(|(featured, author)| DisplayWorkMeta {
                         title: featured.title,
                         description: featured.description,
                         on_site_link: work_reference(&featured.link),
                         author_link: ascii_name_to_author.get(&author).unwrap().clone(),
                         author_displayname: author,
                         embed_html: embed(&featured.link).render().into_string(),
-                    }
-                })
+                    }),
             );
 
-            let works_json = serde_json::to_string(&display_works).expect("Failed to serialize works list");
+            let works_json =
+                serde_json::to_string(&display_works).expect("Failed to serialize works list");
 
             set_pages.push(("works_list.json".to_string(), works_json));
 

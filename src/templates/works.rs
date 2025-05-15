@@ -77,7 +77,6 @@ pub fn work_card(work_meta: &WorkMeta, name_map: &HashMap<String, String>) -> Ma
 
 pub fn work_reference(work_link: &str) -> String {
     BASE64_STANDARD_NO_PAD.encode(seahash::hash(work_link.as_bytes()).to_le_bytes())
-
 }
 
 pub fn work_detail(
