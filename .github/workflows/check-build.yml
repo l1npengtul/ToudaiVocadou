@@ -1,0 +1,71 @@
+name: Check and Build Site
+on:
+  push:
+    branches-ignore:
+      - gh-pages
+    paths-ignore:
+      - '**/*.md'
+      - 'public/*'
+      - 'css/*'
+      - 'js/*'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'public/*'
+      - 'css/*'
+      - 'js/*'
+
+jobs:
+  check-rustfmt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+      - name: run cargo fmt check
+        uses: actions-rust-lang/rustfmt@v1
+
+      - name: build ssg
+        run: cargo build
+      - name: build site
+        run: cargo run
+  check-clippy:
+    runs-on: ubuntu-latest
+    needs: check-rustfmt
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy
+      - name: run cargo clippy
+        run: cargo clippy
+  build-site:
+    runs-on: ubuntu-latest
+    needs: check-clippy
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: cargo run
+        run: cargo run
+      - name: upload artifact
+        id: build
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "dist"
+
+  deploy-site:
+    runs-on: ubuntu-latest
+    needs: build-site
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GH Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

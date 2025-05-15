@@ -157,7 +157,6 @@ fn main() {
                 ),
                 ("404.html".to_string(), notfound(&sack).into_string()),
                 ("robots.txt".to_string(), robots),
-                // ("/works",
             ];
 
             // environment
