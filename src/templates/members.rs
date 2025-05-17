@@ -134,8 +134,10 @@ pub fn member_detail(sack: &Sack<Data>, member: &MemberMeta, content: &str) -> M
             }
             .member-featured-works {
                 h3 { "代表作品" }
-                @for featured in &member.featured_works {
-                    (featured_work_item_detail(featured))
+                .container {
+                    @for featured in &member.featured_works {
+                        (featured_work_item_detail(featured))
+                    }
                 }
             }
 

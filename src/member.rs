@@ -30,11 +30,14 @@ pub struct MemberMeta {
 
 impl From<MemberMeta> for Metadata {
     fn from(value: MemberMeta) -> Self {
+        let page_title = if value.name == value.ascii_name {
+            value.name.clone()
+        } else {
+            format!("{}({})", value.name, value.ascii_name)
+        };
+        
         Metadata {
-            page_title: format!(
-                "{}({}) - 東京大学ボカロP同好会",
-                value.name, &value.ascii_name
-            ),
+            page_title: format!("{page_title} - 東京大学ボカロP同好会"),
             page_image: Some(format!("/icon/{}.jpg", value.ascii_name)),
             canonical_link: format!("members/{}.html", value.ascii_name),
             section: Sections::MemberProfile,
