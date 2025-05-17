@@ -32,11 +32,12 @@ pub struct MemberMeta {
 impl From<MemberMeta> for Metadata {
     fn from(value: MemberMeta) -> Self {
         Metadata {
-            page_title: format!("{}({}) - 東京大学ボカロP同好会", value.name, &value.short),
-            page_image: Some(format!("{}.jpg", value.short)),
-            canonical_link: format!("{}/members/{}", RENDER_SITE, value.short),
+            page_title: format!("{}({}) - 東京大学ボカロP同好会", value.name, &value.ascii_name),
+            page_image: Some(format!("/icon/{}.jpg", value.ascii_name)),
+            canonical_link: format!("members/{}.html", value.ascii_name),
             section: Sections::MemberProfile,
-            author: Some(value.short),
+            description: Some(value.short),
+            author: Some(value.name),
             date: None,
         }
     }

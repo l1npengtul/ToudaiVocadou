@@ -69,8 +69,9 @@ pub fn members(sack: &Sack<Data>, site_map: &SiteMap) -> Markup {
     let metadata = Metadata {
         page_title: "メンバー紹介 - 東京大学ボカロP同好会".to_string(),
         page_image: None,
-        canonical_link: "/members.html".to_string(),
+        canonical_link: "members.html".to_string(),
         section: Sections::Members,
+        description: Some("東京大学ボカロP同好会のメンバー紹介".to_string()),
         author: None,
         date: None,
     };

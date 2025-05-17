@@ -30,6 +30,7 @@ mod read;
 mod sitemap;
 pub mod templates;
 mod work;
+mod util;
 
 pub const FRONT_MATTER_SPLIT: &str = "===";
 pub const RENDER_SITE: &str = "toudaivocadou.org";
@@ -55,19 +56,19 @@ fn main() {
         .add_collections(vec![
             Collection::glob_with(
                 "members",
-                "*",
+                "[!_]*",
                 ["md"],
                 parse_front_matter_and_fetch_contents::<MemberMeta>,
             ),
             Collection::glob_with(
                 "posts",
-                "*",
+                "[!_]*",
                 ["md"],
                 parse_front_matter_and_fetch_contents::<PostMeta>,
             ),
             Collection::glob_with(
                 "works",
-                "*",
+                "[!_]*",
                 ["md"],
                 parse_front_matter_and_fetch_contents::<WorkMeta>,
             ),
