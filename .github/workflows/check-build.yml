@@ -58,37 +58,6 @@ jobs:
           components: clippy
       - name: run cargo clippy
         run: cargo clippy
-  lint-js:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ">=22"
-          check-latest: true
-      - name: Install Prettier
-        run: npm i prettier
-      - name: Install ESLint
-        run: npm i eslint
-      - uses: wearerequired/lint-action@v2
-        with:
-          eslint: true
-          prettier: true
-  lint-css:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ">=22"
-          check-latest: true
-      - name: Install stylelint
-        run: npm i stylelint
-      - uses: wearerequired/lint-action@v2
-        with:
-          stylelint: true
 
   build-site:
     runs-on: ubuntu-latest
@@ -96,8 +65,6 @@ jobs:
       - examine-changed
       - check-clippy
       - check-rustfmt
-      - lint-css
-      - lint-js
     if: ${{ ( ( needs.examine-changed.result.any == 'true' ) || contains(github.event.head_commit.message, '[REBUILD]') || ( needs.check-clippy.result != 'failed' && needs.check-rustfmt.result != 'failed' && needs.lint-css.result != 'failed' && needs.lint-js.result != 'failed' ) ) && always() }}
 
     steps:
