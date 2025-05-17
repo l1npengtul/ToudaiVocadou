@@ -279,7 +279,11 @@ fn main() {
                     .map(|(featured, author)| DisplayWorkMeta {
                         title: featured.title,
                         description: featured.description,
-                        on_site_link: work_reference(&featured.link),
+                        on_site_link: format!(
+                            "/members/{}.html#{}",
+                            author,
+                            work_reference(&featured.link)
+                        ),
                         author_link: ascii_name_to_author.get(&author).unwrap().clone(),
                         author_displayname: author,
                         embed_html: embed(&featured.link).render().into_string(),
