@@ -65,7 +65,7 @@ jobs:
       - examine-changed
       - check-clippy
       - check-rustfmt
-    if: ${{ ( ( needs.examine-changed.result.any == 'true' ) || contains(github.event.head_commit.message, '[REBUILD]') || ( needs.check-clippy.result != 'failed' && needs.check-rustfmt.result != 'failed' && needs.lint-css.result != 'failed' && needs.lint-js.result != 'failed' ) ) && always() }}
+    if: ${{ ( ( needs.examine-changed.result.any == 'true' ) || contains(github.event.head_commit.message, '[REBUILD]') || ( needs.check-clippy.result == 'success' && needs.check-rustfmt.result == 'success' ) ) && always() }}
 
     steps:
       - uses: actions/checkout@v4
