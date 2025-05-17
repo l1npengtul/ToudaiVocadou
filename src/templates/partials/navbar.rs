@@ -18,8 +18,10 @@ pub fn navbar(current_section: Sections) -> Markup {
     html! {
         header {
             div .container {
-                h1 {
-                    "東京大学ボカロP同好会"
+                a href="/index.html" {
+                    h1 {
+                        "東京大学ボカロP同好会"
+                    }
                 }
                 nav {
                     ul {

@@ -1,7 +1,7 @@
 use crate::metadata::Metadata;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
-use crate::{Data, RENDER_SITE, image};
+use crate::{Data, image};
 use hauchiwa::Sack;
 use maud::{Markup, html};
 
@@ -9,9 +9,13 @@ pub fn index(sack: &Sack<Data>) -> Markup {
     let meta = Metadata {
         page_title: "東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club"
             .to_string(),
-        page_image: Some(image(sack, "images/circle-photo.jpg")),
-        canonical_link: format!("{}/", RENDER_SITE),
+        page_image: Some(image(sack, "/images/circle-photo.jpg")),
+        canonical_link: "index.html".to_string(),
         section: Sections::Home,
+        description: Some(
+            "東京大学ボカロP同好会は、ボーカロイド楽曲の制作を通じて交流するサークルです。"
+                .to_string(),
+        ),
         author: None,
         date: None,
     };

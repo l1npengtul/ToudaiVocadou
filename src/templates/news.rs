@@ -4,6 +4,7 @@ use crate::post::PostMeta;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
+use crate::util::shorten;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use hauchiwa::Sack;
@@ -39,6 +40,7 @@ pub fn news_posts(
         page_image: None,
         canonical_link: "/works.html".to_string(),
         section: Sections::News,
+        description: Some("東京大学ボカロP同好会のニュース".to_string()),
         author: None,
         date: None,
     };
@@ -119,8 +121,9 @@ pub fn post_detail(
     let metadata = Metadata {
         page_title: post_meta.title.clone(),
         page_image: post_meta.header_image.clone(),
-        canonical_link: format!("/news/{}.html", post_reference(post_meta)),
+        canonical_link: format!("news/{}.html", post_reference(post_meta)),
         section: Sections::NewsPost,
+        description: Some(shorten(content)),
         author: Some(post_meta.author.clone()),
         date: Some(post_meta.date.to_string()),
     };

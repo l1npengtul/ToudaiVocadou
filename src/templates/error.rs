@@ -25,6 +25,7 @@ pub fn notfound(sack: &Sack<Data>) -> Markup {
         page_image: None,
         canonical_link: "/404.html".to_string(),
         section: Sections::Home,
+        description: None,
         author: None,
         date: None,
     };

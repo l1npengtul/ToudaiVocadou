@@ -5,6 +5,7 @@ use crate::sitemap::SiteMap;
 use crate::templates::base::base;
 use crate::templates::functions::embed::embed;
 use crate::templates::partials::navbar::Sections;
+use crate::util::shorten;
 use crate::work::WorkMeta;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD_NO_PAD;
@@ -37,8 +38,9 @@ pub fn works(sack: &Sack<Data>, site_map: &SiteMap, name_map: &HashMap<String, S
     let metadata = Metadata {
         page_title: "作品集合".to_string(),
         page_image: None,
-        canonical_link: "/works.html".to_string(),
+        canonical_link: "works.html".to_string(),
         section: Sections::Works,
+        description: Some("東京大学ボカロP同好会のメンバーの作品展示館".to_string()),
         author: None,
         date: None,
     };
@@ -117,6 +119,7 @@ pub fn work_detail(
         page_image: Some(get_thumbnail(&work_meta.link)),
         canonical_link: work_meta.link.to_string(),
         section: Sections::WorksPost,
+        description: Some(work_meta.short.clone().unwrap_or(shorten(content))),
         author: Some(work_meta.author.clone()),
         date: Some(work_meta.date.to_string()),
     };
