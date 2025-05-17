@@ -24,6 +24,18 @@ jobs:
               - "**.js"
             css:
               - "**.css"
+            workflow:
+              - "**.yml"
+            any:
+              - "**.rs"
+              - "Cargo.toml"
+              - "Cargo.lock"
+              - "**.md"
+              - "public/**"
+              - "**.js"
+              - "**.css"
+              - "**.yml"
+
   check-rustfmt:
     runs-on: ubuntu-latest
     needs: examine-changed
@@ -93,7 +105,7 @@ jobs:
       - check-rustfmt
       - lint-css
       - lint-js
-    if: ${{ needs.examine-changed.outputs.markdown == 'true' || needs.examine-changed.outputs.js == 'true' || needs.examine-changed.outputs.css == 'true' || needs.examine-changed.outputs.rust == 'true' || contains(github.event.head_commit.message, '[REBUILD]') || always() }}
+    if: ${{ ( ( needs.examine-changed.result.any == 'true' ) || contains(github.event.head_commit.message, '[REBUILD]') || ( needs.check-clippy.result != 'failed' && needs.check-rustfmt.result != 'failed' && needs.lint-css.result != 'failed' && needs.lint-js.result != 'failed' ) ) && always() }}
 
     steps:
       - uses: actions/checkout@v4
@@ -109,6 +121,7 @@ jobs:
   deploy-site:
     runs-on: ubuntu-latest
     needs: build-site
+    if: ${{ always() && needs.build-site.result != 'skipped' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -120,4 +133,3 @@ jobs:
       - name: Deploy to GH Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
