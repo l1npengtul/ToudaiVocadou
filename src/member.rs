@@ -35,7 +35,7 @@ impl From<MemberMeta> for Metadata {
         } else {
             format!("{}({})", value.name, value.ascii_name)
         };
-        
+
         Metadata {
             page_title: format!("{page_title} - 東京大学ボカロP同好会"),
             page_image: Some(format!("/icon/{}.jpg", value.ascii_name)),
