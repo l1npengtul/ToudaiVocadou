@@ -82,7 +82,7 @@ pub fn index(sack: &Sack<Data>) -> Markup {
                         }
                         .back-button{
                             a href="/works.html" {
-                                "曲一覧になる"
+                                "全曲一覧になる"
                             }
                         }
 

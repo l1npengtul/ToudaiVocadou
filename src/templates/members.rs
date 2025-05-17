@@ -5,9 +5,8 @@ use crate::templates::base::base;
 use crate::templates::functions::embed::embed;
 use crate::templates::functions::sns::sns_icon;
 use crate::templates::partials::navbar::Sections;
+use crate::templates::works::work_reference;
 use crate::{Data, image};
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD_NO_PAD;
 use hauchiwa::Sack;
 use maud::{Markup, PreEscaped, html};
 use std::cmp::Ordering;
@@ -155,11 +154,10 @@ pub fn member_detail(sack: &Sack<Data>, member: &MemberMeta, content: &str) -> M
 }
 
 pub fn featured_work_item_detail(item: &MemberFeaturedWork) -> Markup {
-    let link_hash = seahash::hash(item.link.as_bytes()).to_le_bytes();
-    let base64 = BASE64_STANDARD_NO_PAD.encode(link_hash);
+    let work_ref = work_reference(&item.link);
 
     html! {
-        .work-item-detail id=(base64) {
+        .work-item-detail id=(work_ref) {
             h4 { (item.title) }
             .work-youtube-container {
                 (embed(item.link.as_str()))
@@ -171,7 +169,7 @@ pub fn featured_work_item_detail(item: &MemberFeaturedWork) -> Markup {
             }
             @if item.__do_not_use_kuwasiku {
                 .back-button{
-                    a href=(format!("/works/{}.html", base64)) {
+                    a href=(format!("/works/{}.html", work_ref)) {
                         "詳しく見る"
                     }
                 }
