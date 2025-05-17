@@ -22,4 +22,3 @@
         "selector-no-type": true,
         "media-feature-name-no-vendor-prefix": true
 }
-}
