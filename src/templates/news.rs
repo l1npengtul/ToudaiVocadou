@@ -4,12 +4,12 @@ use crate::post::PostMeta;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
+use crate::util::shorten;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use hauchiwa::Sack;
 use maud::{Markup, PreEscaped, html};
 use std::collections::HashMap;
-use crate::util::shorten;
 
 pub fn news_posts(
     sack: &Sack<Data>,

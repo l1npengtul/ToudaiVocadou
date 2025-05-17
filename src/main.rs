@@ -29,8 +29,8 @@ mod post;
 mod read;
 mod sitemap;
 pub mod templates;
-mod work;
 mod util;
+mod work;
 
 pub const FRONT_MATTER_SPLIT: &str = "===";
 pub const RENDER_SITE: &str = "toudaivocadou.org";

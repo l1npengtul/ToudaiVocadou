@@ -5,6 +5,7 @@ use crate::sitemap::SiteMap;
 use crate::templates::base::base;
 use crate::templates::functions::embed::embed;
 use crate::templates::partials::navbar::Sections;
+use crate::util::shorten;
 use crate::work::WorkMeta;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD_NO_PAD;
@@ -13,7 +14,6 @@ use maud::{Markup, PreEscaped, html};
 use std::collections::HashMap;
 use std::str::FromStr;
 use url::Url;
-use crate::util::shorten;
 
 pub fn works(sack: &Sack<Data>, site_map: &SiteMap, name_map: &HashMap<String, String>) -> Markup {
     // TODO: pagination. this will get ungodly long. yell at peng if we get >100!

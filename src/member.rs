@@ -1,4 +1,3 @@
-use crate::RENDER_SITE;
 use crate::metadata::Metadata;
 use crate::templates::partials::navbar::Sections;
 use serde::{Deserialize, Serialize};
@@ -32,7 +31,10 @@ pub struct MemberMeta {
 impl From<MemberMeta> for Metadata {
     fn from(value: MemberMeta) -> Self {
         Metadata {
-            page_title: format!("{}({}) - 東京大学ボカロP同好会", value.name, &value.ascii_name),
+            page_title: format!(
+                "{}({}) - 東京大学ボカロP同好会",
+                value.name, &value.ascii_name
+            ),
             page_image: Some(format!("/icon/{}.jpg", value.ascii_name)),
             canonical_link: format!("members/{}.html", value.ascii_name),
             section: Sections::MemberProfile,
