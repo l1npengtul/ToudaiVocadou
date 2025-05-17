@@ -1,0 +1,122 @@
+name: Check and Build Site
+on:
+  push:
+    branches-ignore:
+      - gh-pages
+
+jobs:
+  examine-changed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - "**.rs"
+              - "Cargo.toml"
+              - "Cargo.lock"
+            markdown:
+              - "**.md"
+              - "public/*"
+            js:
+              - "**.js"
+            css:
+              - "**.css"
+  check-rustfmt:
+    runs-on: ubuntu-latest
+    needs: examine-changed
+    if: ${{ needs.examine-changed.outputs.rust == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+      - name: run cargo fmt check
+        uses: actions-rust-lang/rustfmt@v1
+  check-clippy:
+    runs-on: ubuntu-latest
+    needs:
+      - examine-changed
+      - check-rustfmt
+    if: ${{ needs.examine-changed.outputs.rust == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy
+      - name: run cargo clippy
+        run: cargo clippy
+  lint-js:
+    runs-on: ubuntu-latest
+    needs: examine-changed
+    if: ${{ needs.examine-changed.outputs.js == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">=22"
+          check-latest: true
+      - name: Install Prettier
+        run: npm i prettier
+      - name: Install ESLint
+        run: npm i eslint
+      - uses: wearerequired/lint-action@v2
+        with:
+          eslint: true
+          prettier: true
+  lint-css:
+    runs-on: ubuntu-latest
+    needs: examine-changed
+    if: ${{ needs.examine-changed.outputs.css == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">=22"
+          check-latest: true
+      - name: Install stylelint
+        run: npm i stylelint
+      - uses: wearerequired/lint-action@v2
+        with:
+          stylelint: true
+
+  build-site:
+    runs-on: ubuntu-latest
+    needs:
+      - examine-changed
+      - check-clippy
+      - check-rustfmt
+      - lint-css
+      - lint-js
+    if: ${{ needs.examine-changed.outputs.markdown == 'true' || needs.examine-changed.outputs.js == 'true' || needs.examine-changed.outputs.css == 'true' || needs.examine-changed.outputs.rust == 'true' || contains(github.event.head_commit.message, '[REBUILD]') || always() }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: cargo run
+        run: cargo run
+      - name: upload artifact
+        id: build
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "dist"
+
+  deploy-site:
+    runs-on: ubuntu-latest
+    needs: build-site
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Deploy to GH Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
