@@ -4,7 +4,7 @@ ascii_name = "Mitsumori"
 short = "ケルト×EDM×Jpopで新たな世界を作ります"
 position = "代表"
 
-links = [ "https://www.youtube.com/@seeyoumayday", "https://x.com/Seeyou_Mayday", "https://www.nicovideo.jp/user/127501006", "https://soundcloud.com/ylrkcmwehqxp" ]
+links = [ "https://www.youtube.com/@MitsumoriMusic", "https://twitter.com/MitsumoriMusic", "https://www.nicovideo.jp/user/124389588", "https://lit.link/Mitsumori" ]
 
 [[featured_works]]
 title="三森 - 箱庭の空 (feat.可不)"
