@@ -6,9 +6,9 @@ short = "よろしくー"　# 狭い自分紹介
 links = [ "https://twitter.com/toudaivocadou", "https://example.com" ] #SNS　リンク
 
 [[featured_works]]　# 注目作品1
-title="作品第一"
-description="aaaa"
-link="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+title="作品第一" # 題目
+description="aaaa"　# 説明
+link="https://www.youtube.com/watch?v=dQw4w9WgXcQ" #　リンク
 
 [[featured_works]] # 注目作品2
 title="作品第二"
