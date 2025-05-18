@@ -1,0 +1,23 @@
+name = "例文" # 活動名
+ascii_name = "Reibun"　# 英語字で活動名
+
+short = "よろしくー"　# 狭い自分紹介
+
+links = [ "https://twitter.com/toudaivocadou", "https://example.com" ] #SNS　リンク
+
+[[featured_works]]　# 注目作品1
+title="作品第一"
+description="aaaa"
+link="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+[[featured_works]] # 注目作品2
+title="作品第二"
+description="bbb"
+link="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+# 注目作品がもうあれば [[featured_work]] 書いてもいいです
+
+=== 
+
+「自分紹介」
+  
