@@ -1,6 +1,8 @@
 name = "例文" # 活動名
 ascii_name = "Reibun"　# 英語字で活動名
 
+# 自分のアイコン・写真はascii_nameで選びます。　写真を"public/icon"フォルダにjpgで入れてください(e.g. posts/icon/Reibun.jpg)
+
 short = "よろしくー"　# 狭い自分紹介
 
 links = [ "https://twitter.com/toudaivocadou", "https://example.com" ] #SNS　リンク
