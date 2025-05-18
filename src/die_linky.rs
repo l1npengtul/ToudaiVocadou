@@ -51,7 +51,7 @@ impl FromStr for SocialLinkType {
             "x.com" => SocialLinkType::Xitter,
             "bsky.app" => SocialLinkType::Bluesky,
             "youtube.com" | "www.youtube.com" => SocialLinkType::Youtube,
-            "soundcloud.com" => SocialLinkType::Youtube,
+            "soundcloud.com" => SocialLinkType::Soundcloud,
             "nicovideo.jp" | "www.nicovideo.jp" => SocialLinkType::NicoDouga,
             "github.com" => SocialLinkType::Github,
             "linktree.com" | "linktr.ee" => SocialLinkType::LinkTree,
