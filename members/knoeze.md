@@ -9,7 +9,7 @@ links = [ "https://x.com/knoeze2", "https://www.nicovideo.jp/user/134062469" ]
 [[featured_works]]
 title="アナザーキャピタル(feat.初音ミク)"
 description="東京が好きです。"
-link="https://www.nicovideo.jp/watch/sm44886184"
+link="https://www.nicovideo.jp/watch/sm44678316"
 
 ===
 のえずと申します！
