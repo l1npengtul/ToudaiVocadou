@@ -39,7 +39,7 @@ pub fn index(sack: &Sack<Data>) -> Markup {
                     p { "まだ設立したばかりのこのサークルで、一緒に音楽を楽しみながら成長しませんか？（サークル代表　三森）"}
                 }
                 .about-image {
-                    img .img-placeholder src="images/circle-photo.jpg" alt="サークル活動の様子" style="height: 100%";
+                    img .img-placeholder src="images/circle-photo.jpg" alt="サークル活動の様子" style="height: auto";
                 }
             }
         }
