@@ -30,5 +30,5 @@ pub fn notfound(sack: &Sack<Data>) -> Markup {
         date: None,
     };
 
-    base(sack, &meta, inner)
+    base(sack, &meta, Some(&[]), inner)
 }

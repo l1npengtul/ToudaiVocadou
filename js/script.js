@@ -7,8 +7,8 @@ function titleElement(title, link) {
 
 function creatorElement(author, author_link) {
     let creator = document.getElementById("featured-work-creator")
-    creator.innerHTML = author
-    creator.href = `/members/{author_link}.html`
+    creator.innerHTML = author_link
+    creator.href = `/members/${author}.html`
 }
 
 function descriptionElement(desc) {

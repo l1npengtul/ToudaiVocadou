@@ -75,7 +75,7 @@ pub fn members(sack: &Sack<Data>, site_map: &SiteMap) -> Markup {
         date: None,
     };
 
-    base(sack, &metadata, inner)
+    base(sack, &metadata, None, inner)
 }
 
 pub fn member_card(sack: &Sack<Data>, member: &MemberMeta) -> Markup {
@@ -150,7 +150,7 @@ pub fn member_detail(sack: &Sack<Data>, member: &MemberMeta, content: &str) -> M
 
     let metadata: Metadata = member.clone().into();
 
-    base(sack, &metadata, inner)
+    base(sack, &metadata, None, inner)
 }
 
 pub fn featured_work_item_detail(item: &MemberFeaturedWork) -> Markup {

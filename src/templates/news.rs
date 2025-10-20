@@ -45,7 +45,7 @@ pub fn news_posts(
         date: None,
     };
 
-    base(sack, &metadata, inner)
+    base(sack, &metadata, Some(&[]), inner)
 }
 
 pub fn post_card(post_meta: &PostMeta, short: &str, name_map: &HashMap<String, String>) -> Markup {
@@ -128,7 +128,7 @@ pub fn post_detail(
         date: Some(post_meta.date.to_string()),
     };
 
-    base(sack, &metadata, inner)
+    base(sack, &metadata, Some(&[]), inner)
 }
 
 pub fn post_reference(meta: &PostMeta) -> String {

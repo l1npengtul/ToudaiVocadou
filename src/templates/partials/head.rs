@@ -4,10 +4,9 @@ use camino::Utf8PathBuf;
 use hauchiwa::Sack;
 use maud::{Markup, html};
 
-pub fn html_head(sack: &Sack<Data>, metadata: &Metadata) -> Markup {
+pub fn html_head(sack: &Sack<Data>, metadata: &Metadata, scripts: &[&str]) -> Markup {
     let style_path = Utf8PathBuf::from("css/style.css");
     let style = sack.get_styles(&style_path).unwrap().into_string();
-    let script = sack.get_script("script.js").unwrap().into_string();
 
     html! {
         head {
@@ -16,7 +15,9 @@ pub fn html_head(sack: &Sack<Data>, metadata: &Metadata) -> Markup {
             (render_metadata(sack, metadata))
             link rel="stylesheet" href=(style);
             link rel="icon" type="image/x-icon" href="/favicon.ico";
-            script src=(script) {}
+            @for script_url in scripts {
+                script src=(script_url) {}
+            }
         }
     }
 }

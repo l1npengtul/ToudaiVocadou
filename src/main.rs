@@ -10,7 +10,7 @@ use crate::templates::index::index;
 use crate::templates::members::member_detail;
 use crate::templates::news::post_reference;
 use crate::templates::works::work_reference;
-use crate::work::{DisplayWorkMeta, WorkMeta};
+use crate::work::{DisplayWorkMeta, IntermediaryDisplayWorkMeta, WorkMeta};
 use camino::Utf8PathBuf;
 use clap::{Parser, ValueEnum};
 use hauchiwa::{Collection, Processor, Sack, Website};
@@ -20,6 +20,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Read;
 
+mod album;
 mod die_linky;
 mod featured_work;
 mod member;
@@ -261,9 +262,9 @@ fn main() {
 
             // generate the work list
 
-            let mut display_works = works_list
+            let mut intermediary_display_works = works_list
                 .into_iter()
-                .map(|w| DisplayWorkMeta {
+                .map(|w| IntermediaryDisplayWorkMeta {
                     title: w.title,
                     description: w.short,
                     on_site_link: work_reference(&w.link),
@@ -271,24 +272,36 @@ fn main() {
                     author_link: ascii_name_to_author.get(&w.author).unwrap().clone(),
                     author_displayname: w.author,
                 })
-                .collect::<Vec<DisplayWorkMeta>>();
+                .collect::<Vec<IntermediaryDisplayWorkMeta>>();
 
-            display_works.extend(
-                featured_works_leftovers
-                    .into_iter()
-                    .map(|(featured, author)| DisplayWorkMeta {
-                        title: featured.title,
-                        description: featured.description,
-                        on_site_link: format!(
-                            "/members/{}.html#{}",
-                            author,
-                            work_reference(&featured.link)
-                        ),
-                        author_link: ascii_name_to_author.get(&author).unwrap().clone(),
-                        author_displayname: author,
-                        embed_html: embed(&featured.link).render().into_string(),
-                    }),
-            );
+            intermediary_display_works.extend(featured_works_leftovers.into_iter().map(
+                |(featured, author)| IntermediaryDisplayWorkMeta {
+                    title: featured.title,
+                    description: featured.description,
+                    on_site_link: format!(
+                        "/members/{}.html#{}",
+                        author,
+                        work_reference(&featured.link)
+                    ),
+                    author_link: ascii_name_to_author.get(&author).unwrap().clone(),
+                    author_displayname: author,
+                    embed_html: embed(&featured.link).render().into_string(),
+                },
+            ));
+
+            let display_works = intermediary_display_works
+                .into_iter()
+                .enumerate()
+                .map(|(idx, intermediary_work)| DisplayWorkMeta {
+                    id: idx as i32,
+                    title: intermediary_work.title,
+                    description: intermediary_work.description,
+                    on_site_link: intermediary_work.on_site_link,
+                    author_link: intermediary_work.author_link,
+                    author_displayname: intermediary_work.author_displayname,
+                    embed_html: intermediary_work.embed_html,
+                })
+                .collect::<Vec<DisplayWorkMeta>>();
 
             let works_json =
                 serde_json::to_string(&display_works).expect("Failed to serialize works list");

@@ -98,28 +98,6 @@ pub fn index(sack: &Sack<Data>) -> Markup {
             }
         }
 
-        section #join {
-            .container {
-                h2 { "入会案内" }
-                .join-info {
-                    p { "東京大学の学生であれば、学部・学年を問わず入会できます。音楽制作の経験がなくても大歓迎です！" }
-                    p { "入会を希望される方は、下記のXアカウントまでご連絡ください。" }
-                    p .contact-email {
-                        a href="https://twitter.com/toudaivocadou/" {
-                            "@toudaivocadou"
-                        }
-                    }
-                    p { "または、新歓期間中の説明会にお越しください。" }
-                    .join-details {
-                        h3 { "説明会情報" }
-                        p { "日時: 4月12日 18:00〜18:30" }
-                        p { "説明会の参加方法に関しましては、公式Xアカウントで随時お知らせいたします。" }
-                        p { "また、日時に関しても変更される場合がありますので、公式Xアカウントからの情報を随時ご確認ください。" }
-                    }
-                }
-            }
-        }
-
         // section #news {
         //     .container {
         //         h2 { "最新ニュース" }
@@ -131,7 +109,7 @@ pub fn index(sack: &Sack<Data>) -> Markup {
 
     };
 
-    base(sack, &meta, content)
+    base(sack, &meta, Some(&["script.js"]), content)
 }
 
 fn activity(title: &str, timeframe: &str, description: &str) -> Markup {

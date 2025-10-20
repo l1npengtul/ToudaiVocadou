@@ -17,6 +17,7 @@
         pkgs = import nixpkgs {
           inherit system;
           overlays = [rust-overlay.overlays.default];
+          config.allowUnfree = true;
         };
         rustbin = pkgs.rust-bin.selectLatestNightlyWith (toolchain:
           toolchain.default.override {
@@ -39,6 +40,7 @@
               rustup
               simple-http-server
               http-server
+              jetbrains.rust-rover
           ]);
 
           env.RUST_SRC_PATH = "${rustbin}/lib/rustlib/src/rust/library";

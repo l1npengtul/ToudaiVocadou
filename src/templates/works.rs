@@ -26,6 +26,10 @@ pub fn works(sack: &Sack<Data>, site_map: &SiteMap, name_map: &HashMap<String, S
             }
         }
 
+        section #filters {
+
+        }
+
         section #list {
             .listcontainer {
                 @for work in &site_map.works {
@@ -45,7 +49,7 @@ pub fn works(sack: &Sack<Data>, site_map: &SiteMap, name_map: &HashMap<String, S
         date: None,
     };
 
-    base(sack, &metadata, inner)
+    base(sack, &metadata, Some(&[]), inner)
 }
 
 pub fn work_card(work_meta: &WorkMeta, name_map: &HashMap<String, String>) -> Markup {
@@ -123,7 +127,7 @@ pub fn work_detail(
         author: Some(work_meta.author.clone()),
         date: Some(work_meta.date.to_string()),
     };
-    base(sack, &metadata, inner)
+    base(sack, &metadata, Some(&[]), inner)
 }
 
 pub fn get_thumbnail(link: &str) -> String {

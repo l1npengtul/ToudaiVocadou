@@ -2,6 +2,7 @@ pub mod base;
 pub mod error;
 pub mod functions;
 pub mod index;
+pub mod join;
 pub mod members;
 pub mod news;
 pub mod partials;
