@@ -2,7 +2,7 @@ use hauchiwa::Sack;
 use maud::{Markup, html};
 
 use crate::{
-    Data, RENDER_SITE, image,
+    Data, image, lnk,
     metadata::Metadata,
     templates::{base::base, partials::navbar::Sections},
 };
@@ -10,8 +10,8 @@ use crate::{
 pub fn join(sack: &Sack<Data>) -> Markup {
     let meta = Metadata {
         page_title: "入会希望者へ - Joining Vocaloid Producer Club".to_string(),
-        page_image: Some(image(sack, "images/circle-photo.jpg")),
-        canonical_link: format!("{}/join.html", RENDER_SITE),
+        page_image: Some(lnk(image(sack, "images/circle-photo.jpg"))),
+        canonical_link: lnk(format!("join.html")),
         section: Sections::Join,
         author: None,
         date: None,

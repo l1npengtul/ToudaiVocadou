@@ -1,4 +1,4 @@
-use crate::member::{MemberFeaturedWork, MemberMeta};
+use crate::member::MemberMeta;
 use crate::post::PostMeta;
 use crate::read::{parse_and_format, parse_front_matter_and_fetch_contents};
 use crate::sitemap::SiteMap;
@@ -10,7 +10,7 @@ use crate::templates::index::index;
 use crate::templates::members::member_detail;
 use crate::templates::news::post_reference;
 use crate::templates::works::work_reference;
-use crate::work::{DisplayWorkMeta, IntermediaryDisplayWorkMeta, WorkMeta};
+use crate::work::{DisplayWorkMeta, WorkMeta};
 use camino::Utf8PathBuf;
 use clap::{Parser, ValueEnum};
 use hauchiwa::{Collection, Processor, Sack, Website};
@@ -19,6 +19,7 @@ use minijinja::Environment;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Read;
+use std::sync::OnceLock;
 
 mod album;
 mod die_linky;
@@ -34,7 +35,14 @@ mod util;
 mod work;
 
 pub const FRONT_MATTER_SPLIT: &str = "===";
-pub const RENDER_SITE: &str = "toudaivocadou.org";
+
+pub fn lnk(url: impl AsRef<str>) -> String {
+    static SITEROOT: OnceLock<String> = OnceLock::new();
+    let root = SITEROOT
+        .get_or_init(|| std::env::var("SITEROOT").unwrap_or("toudaivocadou.org".to_string()));
+
+    format!("{root}/{}", url.as_ref())
+}
 
 pub struct Data;
 
@@ -98,10 +106,14 @@ fn main() {
             // 5. gather all of this and put it in a JSON, which then the client side JS can consume to power the random work button.
 
             let works = sack.query_content::<WorkMeta>("*").unwrap();
-            if !works
-                .iter()
-                .all(|work| member_name_list.contains(&work.meta.author.as_str()))
-            {
+            if !works.iter().all(|work| {
+                member_name_list.contains(&work.meta.author.as_str())
+                    && work
+                        .meta
+                        .collaborators
+                        .iter()
+                        .all(|collaborator| member_name_list.contains(&collaborator.as_str()))
+            }) {
                 panic!("work contains bad author.")
             }
 
@@ -109,6 +121,12 @@ fn main() {
                 .iter()
                 .map(|work| work.meta.link.clone())
                 .collect::<HashSet<String>>();
+
+            let featured_works = works
+                .iter()
+                .filter(|work| work.meta.featured == true)
+                .map(|work| work.meta)
+                .collect::<Vec<&WorkMeta>>();
 
             let news_posts = sack.query_content::<PostMeta>("*").unwrap();
             if !news_posts
@@ -168,46 +186,25 @@ fn main() {
             jinja_environment.add_function("sns_link", jinja_sns_icon);
             jinja_environment.add_function("sns_embed", jinja_embed);
             jinja_environment.add_function("member", jinja_member);
-            jinja_environment.add_global("SITE", RENDER_SITE);
+            jinja_environment.add_global("SITE", lnk(""));
 
             // render members
 
-            let mut featured_works_leftovers = vec![];
             let mut works_list = vec![];
 
             let member_detail = members
                 .into_iter()
                 .map(|member_page| -> Result<(String, String), anyhow::Error> {
-                    let mut member_page_meta = member_page.meta.clone();
-
-                    member_page_meta.featured_works = member_page
-                        .meta
-                        .featured_works
-                        .iter()
-                        .map(|featured| match works_urls.get(&featured.link) {
-                            Some(_) => MemberFeaturedWork {
-                                title: featured.title.clone(),
-                                description: featured.description.clone(),
-                                link: featured.link.clone(),
-                                __do_not_use_kuwasiku: true,
-                            },
-                            None => {
-                                featured_works_leftovers
-                                    .push((featured.clone(), member_page_meta.ascii_name.clone()));
-                                featured.clone()
-                            }
-                        })
-                        .collect();
-
                     let content_html = parse_and_format(
                         &sack,
-                        &member_page_meta,
+                        member_page.meta,
                         &jinja_environment,
                         member_page.content,
                     )?;
                     let rendered_page =
-                        member_detail(&sack, &member_page_meta, &content_html).into_string();
-                    let path = format!("members/{}.html", &member_page_meta.ascii_name);
+                        member_detail(&sack, member_page.meta, &featured_works, &content_html)
+                            .into_string();
+                    let path = lnk(format!("members/{}.html", &member_page.meta.ascii_name));
                     Ok((path, rendered_page))
                 })
                 .collect::<Result<Vec<(String, String)>, anyhow::Error>>()?;
@@ -251,7 +248,7 @@ fn main() {
                         &ascii_name_to_author,
                     )
                     .into_string();
-                    let path = format!("news/{}.html", post_reference(news_page.meta));
+                    let path = lnk(format!("news/{}.html", post_reference(news_page.meta)));
                     Ok((path, rendered_page))
                 })
                 .collect::<Result<Vec<(String, String)>, anyhow::Error>>()?;
@@ -262,44 +259,18 @@ fn main() {
 
             // generate the work list
 
-            let mut intermediary_display_works = works_list
-                .into_iter()
-                .map(|w| IntermediaryDisplayWorkMeta {
-                    title: w.title,
-                    description: w.short,
-                    on_site_link: work_reference(&w.link),
-                    embed_html: embed(&w.link).render().into_string(),
-                    author_link: ascii_name_to_author.get(&w.author).unwrap().clone(),
-                    author_displayname: w.author,
-                })
-                .collect::<Vec<IntermediaryDisplayWorkMeta>>();
-
-            intermediary_display_works.extend(featured_works_leftovers.into_iter().map(
-                |(featured, author)| IntermediaryDisplayWorkMeta {
-                    title: featured.title,
-                    description: featured.description,
-                    on_site_link: format!(
-                        "/members/{}.html#{}",
-                        author,
-                        work_reference(&featured.link)
-                    ),
-                    author_link: ascii_name_to_author.get(&author).unwrap().clone(),
-                    author_displayname: author,
-                    embed_html: embed(&featured.link).render().into_string(),
-                },
-            ));
-
-            let display_works = intermediary_display_works
+            let display_works = works_list
                 .into_iter()
                 .enumerate()
-                .map(|(idx, intermediary_work)| DisplayWorkMeta {
+                .map(|(idx, works)| DisplayWorkMeta {
                     id: idx as i32,
-                    title: intermediary_work.title,
-                    description: intermediary_work.description,
-                    on_site_link: intermediary_work.on_site_link,
-                    author_link: intermediary_work.author_link,
-                    author_displayname: intermediary_work.author_displayname,
-                    embed_html: intermediary_work.embed_html,
+                    title: works.title,
+                    description: works.short,
+                    author_link: ascii_name_to_author.get(&works.author).unwrap().clone(),
+                    author_displayname: works.author,
+                    on_site_link: work_reference(&works.link),
+                    embed_html: embed(&works.link).render().into_string(),
+                    collaborators: works.collaborators,
                 })
                 .collect::<Vec<DisplayWorkMeta>>();
 
@@ -326,8 +297,9 @@ fn main() {
 
 pub fn image(sack: &Sack<Data>, path: impl AsRef<str>) -> String {
     let picture_path = Utf8PathBuf::from(path.as_ref());
-    match sack.get_picture(&picture_path) {
+    let image = match sack.get_picture(&picture_path) {
         Ok(p) => p.into_string(),
         Err(_) => path.as_ref().to_string(),
-    }
+    };
+    lnk(image)
 }

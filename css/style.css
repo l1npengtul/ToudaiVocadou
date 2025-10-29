@@ -407,6 +407,30 @@ section h2 {
     text-align: center;
 }
 
+#album-section {}
+
+.album-image-carousel-container {}
+
+.album-image-carousel-button {}
+
+.album-image-carousel {}
+
+.album-image-carousel-item {}
+
+#work-section {}
+
+.work-detail-container {}
+
+.work-detail {}
+
+.work-image {}
+
+.work-info {}
+
+.work-description {}
+
+.work-featured-work h4 {}
+
 .work-item-detail {
     margin-bottom: 60px;
     background-color: #fff;

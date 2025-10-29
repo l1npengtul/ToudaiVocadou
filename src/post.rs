@@ -5,6 +5,7 @@ use toml::value::Date;
 pub struct PostMeta {
     pub title: String,
     pub author: String,
+    #[serde(default)]
     pub header_image: Option<String>,
     pub date: Date,
 }

@@ -1,34 +1,28 @@
 name = "例文" # 活動名
-ascii_name = "Reibun"　# 英語字で活動名
+ascii_name = "Reibun" # 英語字で活動名
 
-# 自分のアイコン・写真はascii_nameで選びます。　写真を"public/icon"フォルダにjpgで入れてください(e.g. posts/icon/Reibun.jpg)
+# 自分のアイコン・写真はascii_nameで選びます。　写真を"public/icon"(e.g. public/icon/Reibun.jpg).
 
-short = "よろしくー"　# 狭い自分紹介
+short = "RIP 🇧.🇺.🇳.🇵 2025-2025" # 狭い自分紹介
 
 links = [ "https://twitter.com/toudaivocadou", "https://example.com" ] #SNS　リンク
 
-[[featured_works]]　# 注目作品1
-title="作品第一" # 題目
-description="aaaa"　# 説明
-link="https://www.youtube.com/watch?v=dQw4w9WgXcQ" #　リンク
-
-[[featured_works]] # 注目作品2
-title="作品第二"
-description="bbb"
-link="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-
-# 注目作品がもうあれば [[featured_work]] 書いてもいいです
 
 === 
 
-「自分紹介」
-  
-embedは
+こちらに自己紹介を入力
 
-{{ sns_embed("embedしたいリンクはこちら") }}
+**ディスコードみたいマークダウンフォーマットできます**
 
-でかいてもいいです
+ツイータなどsnsのポストを入れたければ
+{{ sns_embed("https://x.com/あなたのユーザーネーム/ポストID") }}
+を使ってください ("https://x.com/あなたのユーザーネーム/ポストID")を変更するべき
 
-formattingはdiscordと同じです　https://qiita.com/to3izo/items/7057acda14c6d5f1f4e3
+追加の写真は
+[写真説明](circle-photo.jpg)
+
+マークダウン使用ガイド: https://qiita.com/masterpiecehack/items/990683b706b70b88b4c7
+
+
 
 

@@ -1,5 +1,5 @@
 use crate::templates::partials::navbar::Sections;
-use crate::{Data, RENDER_SITE, image};
+use crate::{Data, image, lnk};
 use hauchiwa::Sack;
 use maud::{Markup, html};
 use serde::{Deserialize, Serialize};
@@ -41,11 +41,7 @@ pub fn render_metadata(sack: &Sack<Data>, metadata: &Metadata) -> Markup {
         _ => html! {},
     };
 
-    let canonical_link = if metadata.canonical_link.starts_with("/") {
-        format!("{}{}", RENDER_SITE, &metadata.canonical_link)
-    } else {
-        format!("{}/{}", RENDER_SITE, &metadata.canonical_link)
-    };
+    let canonical_link = lnk(&metadata.canonical_link);
 
     html! {
         title { (&metadata.page_title) }

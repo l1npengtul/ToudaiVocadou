@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use toml::value::Date;
 
-#[derive(Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
+use crate::{metadata::Metadata, templates::partials::navbar::Sections};
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AlbumMeta {
     pub title: String,
     pub subtitle: Option<String>,
@@ -11,13 +14,40 @@ pub struct AlbumMeta {
     //
     pub contributors: Vec<String>,
     pub extra_contributors: Vec<String>,
-    pub illustrators: Vec<String>,
-    pub extra_illustrators: Vec<String>,
-    pub engineers: Vec<String>,
-    pub extra_engineers: Vec<String>,
-    pub track_list: Vec<Track>,
 
     pub crossfade_demonstration: Option<String>,
+
+    pub front_cover: String,
+    pub other_covers: HashMap<String, String>,
+}
+
+impl AlbumMeta {
+    pub fn contributors_str(&self) -> String {
+        let mut all_contributors = HashSet::new();
+        all_contributors.extend(&self.contributors);
+        all_contributors.extend(&self.extra_contributors);
+
+        all_contributors
+            .into_iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>()
+            .join(", ")
+    }
+}
+
+impl From<AlbumMeta> for Metadata {
+    fn from(value: AlbumMeta) -> Self {
+        let authors = value.contributors_str();
+        Metadata {
+            canonical_link: format!("/works/albums/{}", &value.title),
+            page_title: value.title,
+            page_image: Some(value.front_cover),
+            section: Sections::Works,
+            description: Some(value.short),
+            author: Some(authors),
+            date: Some(value.release_date.to_string()),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]

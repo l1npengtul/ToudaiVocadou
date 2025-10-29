@@ -1,5 +1,8 @@
 use crate::Data;
+use crate::album::AlbumMeta;
 use crate::die_linky::SocialLinkType;
+use crate::image;
+use crate::lnk;
 use crate::metadata::Metadata;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
@@ -21,7 +24,7 @@ pub fn works(sack: &Sack<Data>, site_map: &SiteMap, name_map: &HashMap<String, S
     let inner = html! {
         section #hero {
             .container {
-                h2 { "作品" }
+                h2 { "リリース" }
                 p { "東京大学ボカロP同好会のメンバーの作品目録です。" }
             }
         }
@@ -40,7 +43,7 @@ pub fn works(sack: &Sack<Data>, site_map: &SiteMap, name_map: &HashMap<String, S
     };
 
     let metadata = Metadata {
-        page_title: "作品集合".to_string(),
+        page_title: "リリース".to_string(),
         page_image: None,
         canonical_link: "works.html".to_string(),
         section: Sections::Works,
@@ -53,16 +56,21 @@ pub fn works(sack: &Sack<Data>, site_map: &SiteMap, name_map: &HashMap<String, S
 }
 
 pub fn work_card(work_meta: &WorkMeta, name_map: &HashMap<String, String>) -> Markup {
-    let author_name = name_map.get(&work_meta.author).expect("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info");
+    let author_name = name_map.get(&work_meta.author).expect("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it?");
 
     html! {
         .item-card {
+            .item-type {
+                p {
+                    "リリース曲"
+                }
+            }
             .item-image {
                 img .work-item-thumb src=(get_thumbnail(&work_meta.link)) alt=(work_meta.title) {}
             }
             .item-title {
                 h3 {
-                    a href=(format!("/works/{}.html", work_reference(&work_meta.link))){
+                    a href=(lnk(format!("/works/releases/{}.html", work_reference(&work_meta.link)))){
                         (work_meta.title)
                     }
                 }
@@ -85,6 +93,108 @@ pub fn work_reference(work_link: &str) -> String {
     BASE64_STANDARD_NO_PAD.encode(seahash::hash(work_link.as_bytes()).to_le_bytes())
 }
 
+pub fn album_card(album_meta: &AlbumMeta) -> Markup {
+    html! {
+        .item-card {
+            .item-type {
+                p {
+                    "アルバム"
+                }
+            }
+            .item-image {
+                img .work-item-thumb src=(&album_meta.front_cover) alt=(&album_meta.title) {}
+            }
+            .item-title {
+                h3 {
+                    a href=(
+                        lnk(format!("works/albums/{}.html", album_meta.title))
+                    ) {
+                        (album_meta.title)
+                    }
+                }
+                p .member-role {
+                    (album_meta.release_date)
+                }
+                p .member-department {
+                    (album_meta.contributors_str())
+                }
+                p {
+                    (album_meta.short)
+                }
+            }
+        }
+    }
+}
+
+pub fn album_detail(
+    sack: &Sack<Data>,
+    album_meta: &AlbumMeta,
+    name_map: &HashMap<String, String>,
+    content: &str,
+) -> Markup {
+    let contributors = album_meta.contributors.iter().map(|contributor| {
+        let ascii_name = name_map
+            .get(contributor)
+            .expect(format!("Error! Failed to find user {contributor} in the name map.").as_str());
+        html! {
+            a href=(lnk(format!("members/{}.html", ascii_name))) {
+                (contributor)
+            }
+        }
+    });
+    let extra_contributors = album_meta.extra_contributors.iter();
+
+    let inner = html! {
+        section #work-section {
+            .work-detail-container {
+                .work-detail {
+                    .work-image {
+                        (image(sack, &album_meta.front_cover))
+                    }
+                    .work-info {
+                        h2 { (album_meta.title) }
+                        .work-contributors {
+                            h4 { "投稿者" }
+                            p {
+                                @for contrib in contributors {
+                                    (contrib) " "
+                                }
+                                @for extrac in extra_contributors {
+                                    (extrac) " "
+                                }
+                            }
+                        }
+                        hr {}
+                        p {
+                            (album_meta.short)
+                        }
+                    }
+                }
+            }
+            .work-description {
+                (PreEscaped(content))
+            }
+        }
+
+        .back-button{
+            a href=(lnk("works.html")) {
+                "リリース集合一覧に戻る"
+            }
+        }
+    };
+
+    let metadata = Metadata {
+        page_title: album_meta.title.clone(),
+        page_image: Some(image(sack, &album_meta.front_cover)),
+        canonical_link: format!("works/albums/{}.html", album_meta.title),
+        section: Sections::WorksPost,
+        description: Some(album_meta.short.clone()),
+        author: Some(album_meta.contributors_str()),
+        date: Some(album_meta.release_date.to_string()),
+    };
+    base(sack, &metadata, Some(&[]), inner)
+}
+
 pub fn work_detail(
     sack: &Sack<Data>,
     work_meta: &WorkMeta,
@@ -94,26 +204,35 @@ pub fn work_detail(
     let author_name = name_map.get(&work_meta.author).expect("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info");
 
     let inner = html! {
-        section #work-detail {
-            .member-detail-container {
-                .member-profile {
-                    .member-profile-image {
+        section #work-section {
+            .work-detail-container {
+                .work-detail {
+                    .work-image {
                         (embed(&work_meta.link))
                     }
-                    .member-profile-info {
+                    .work-info {
                         h2 { (work_meta.title) }
-                        a href=(format!("/members/{}.html", work_meta.author)) { p { (author_name) } }
-                        .member-bio {
-                            (PreEscaped(content))
+                        .work-featured-work {
+                            @if work_meta.featured {
+                                h4 { "このリリースはメンバーページでフィーチャーされています。" }
+                            }
+                        }
+                        a href=(lnk(format!("members/{}.html", work_meta.author))) { p { (author_name) } }
+                        hr {}
+                        @if let Some(short) = &work_meta.short {
+                            p { (short) }
                         }
                     }
                 }
             }
+            .work-description {
+                (PreEscaped(content))
+            }
         }
 
         .back-button{
-            a href="../works.html" {
-                "作品集合一覧に戻る"
+            a href=(lnk("works.html")) {
+                "リリース集合一覧に戻る"
             }
         }
     };
@@ -121,7 +240,7 @@ pub fn work_detail(
     let metadata = Metadata {
         page_title: work_meta.title.clone(),
         page_image: Some(get_thumbnail(&work_meta.link)),
-        canonical_link: work_meta.link.to_string(),
+        canonical_link: format!("works/releases/{}.html", work_meta.title),
         section: Sections::WorksPost,
         description: Some(work_meta.short.clone().unwrap_or(shorten(content))),
         author: Some(work_meta.author.clone()),
@@ -148,7 +267,7 @@ pub fn get_thumbnail(link: &str) -> String {
         }
         SocialLinkType::NicoDouga => {
             // FIXME: NND is fucking cringe and you need some sort of key to download their thumbs.
-            // TODO: use request and fetch the thumbnails and host them locally.
+            // use request and fetch the thumbnails and host them locally.
             // Until then, lol.
             "/images/gray.jpg".to_string()
         }
