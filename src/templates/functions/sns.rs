@@ -1,4 +1,4 @@
-use crate::die_linky::SocialLinkType;
+use crate::{die_linky::SocialLinkType, lnk};
 use maud::{Markup, html};
 
 pub fn sns_icon(link: &str) -> Markup {
@@ -11,7 +11,7 @@ pub fn sns_icon(link: &str) -> Markup {
     };
     html! {
         a .social-icon .sns-icon-size href=(link) {
-            img alt=(link) src=(format!("/icon/social_icons/{}", sns_url_icon)) style=(special_style);
+            img alt=(link) src=(lnk(format!("icon/social_icons/{}", sns_url_icon))) style=(special_style);
         }
     }
 }

@@ -1,16 +1,15 @@
-use hauchiwa::Sack;
-use maud::{Markup, html};
-
 use crate::{
-    Data, image, lnk,
+    SiteData, image, lnk,
     metadata::Metadata,
     templates::{base::base, partials::navbar::Sections},
 };
+use hauchiwa::{Context, RuntimeError};
+use maud::{Markup, html};
 
-pub fn join(sack: &Sack<Data>) -> Markup {
+pub fn join(sack: &Context<SiteData>) -> Result<Markup, RuntimeError> {
     let meta = Metadata {
         page_title: "入会希望者へ - Joining Vocaloid Producer Club".to_string(),
-        page_image: Some(lnk(image(sack, "images/circle-photo.jpg"))),
+        page_image: Some(lnk(image(sack, "images/circle-photo.jpg")?)),
         canonical_link: lnk(format!("join.html")),
         section: Sections::Join,
         author: None,

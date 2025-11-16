@@ -1,6 +1,6 @@
 use crate::templates::partials::navbar::Sections;
-use crate::{Data, image, lnk};
-use hauchiwa::Sack;
+use crate::{SiteData, image, lnk};
+use hauchiwa::{Context, RuntimeError};
 use maud::{Markup, html};
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +15,10 @@ pub struct Metadata {
     pub date: Option<String>,
 }
 
-pub fn render_metadata(sack: &Sack<Data>, metadata: &Metadata) -> Markup {
+pub fn render_metadata(
+    sack: &Context<SiteData>,
+    metadata: &Metadata,
+) -> Result<Markup, RuntimeError> {
     let page_type = match metadata.section {
         Sections::Home => "website",
         Sections::Members => "website",
@@ -43,7 +46,7 @@ pub fn render_metadata(sack: &Sack<Data>, metadata: &Metadata) -> Markup {
 
     let canonical_link = lnk(&metadata.canonical_link);
 
-    html! {
+    Ok(html! {
         title { (&metadata.page_title) }
         meta property="og:title" content=(&metadata.page_title);
         meta property="og:url" content=(canonical_link);
@@ -51,11 +54,11 @@ pub fn render_metadata(sack: &Sack<Data>, metadata: &Metadata) -> Markup {
         meta property="og:site_name" content="東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club"; // production -> producer - ありがとーnekojitalter
         meta property="og:locale" content="ja_JP";
         @if let Some(img) = &metadata.page_image {
-            meta property="og:image" content=(image(sack, img));
+            meta property="og:image" content=(image(sack, img)?);
         }
         @if let Some(desc) = &metadata.description {
             meta property="og:description" content=(desc);
         }
         (others)
-    }
+    })
 }

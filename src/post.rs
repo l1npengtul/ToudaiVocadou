@@ -8,4 +8,13 @@ pub struct PostMeta {
     #[serde(default)]
     pub header_image: Option<String>,
     pub date: Date,
+
+    #[serde(default)]
+    pub short: Option<String>,
+
+    #[serde(default)]
+    pub official: bool,
+
+    #[serde(default)]
+    pub social_links: Vec<String>,
 }

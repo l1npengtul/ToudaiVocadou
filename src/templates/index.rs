@@ -1,16 +1,17 @@
 use crate::metadata::Metadata;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
-use crate::{Data, image};
-use hauchiwa::Sack;
+use crate::{SiteData, image, lnk};
+use hauchiwa::Context;
+use hauchiwa::RuntimeError;
 use maud::{Markup, html};
 
-pub fn index(sack: &Sack<Data>) -> Markup {
+pub fn index(context: &Context<SiteData>) -> Result<Markup, RuntimeError> {
     let meta = Metadata {
         page_title: "東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club"
             .to_string(),
-        page_image: Some(image(sack, "/images/circle-photo.jpg")),
-        canonical_link: "index.html".to_string(),
+        page_image: Some(image(context, "/images/circle-photo.jpg")?),
+        canonical_link: lnk("index.html"),
         section: Sections::Home,
         description: Some(
             "東京大学ボカロP同好会は、ボーカロイド楽曲の制作を通じて交流するサークルです。"
@@ -109,7 +110,7 @@ pub fn index(sack: &Sack<Data>) -> Markup {
 
     };
 
-    base(sack, &meta, Some(&["script.js"]), content)
+    base(context, &meta, Some(&["script.js"]), content)
 }
 
 fn activity(title: &str, timeframe: &str, description: &str) -> Markup {

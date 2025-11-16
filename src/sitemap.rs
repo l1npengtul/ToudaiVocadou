@@ -1,11 +1,13 @@
-use crate::member::MemberMeta;
 use crate::post::PostMeta;
 use crate::work::WorkMeta;
-use serde::{Deserialize, Serialize};
+use crate::{album::AlbumMeta, member::MemberMeta};
+use serde::Serialize;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct SiteMap {
     pub members: Vec<MemberMeta>,
-    pub posts: Vec<(PostMeta, String)>,
+    pub official_posts: Vec<PostMeta>,
+    pub posts: Vec<PostMeta>,
     pub works: Vec<WorkMeta>,
+    pub albums: Vec<AlbumMeta>,
 }

@@ -1,11 +1,14 @@
-use crate::{Data, FRONT_MATTER_SPLIT};
+use crate::work::{CoverOrImage, RawWorkMeta, WorkMeta};
+use crate::{FRONT_MATTER_SPLIT, SiteData};
 use camino::Utf8PathBuf;
-use hauchiwa::Sack;
+use hauchiwa::Context;
+use hauchiwa::loader::Image;
 use minijinja::Environment;
 use pulldown_cmark::html::push_html;
 use pulldown_cmark::{CowStr, Event, Options, Parser, Tag};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+use url::Url;
 
 pub fn parse_front_matter_and_fetch_contents<Metadata>(
     file: &str,
@@ -27,8 +30,49 @@ where
     Ok((toml_parsed, content.to_string()))
 }
 
+pub fn parse_work_meta(file: &str) -> Result<(WorkMeta, String), anyhow::Error> {
+    let (raw_work, content) = parse_front_matter_and_fetch_contents::<RawWorkMeta>(file)?;
+
+    let coi = match &raw_work.cover_image {
+        Some(coverimg) => CoverOrImage::Cover(coverimg.to_string()),
+        None => match &raw_work.link {
+            Some(wlnl) => {
+                let url = Url::parse(&wlnl)?;
+                CoverOrImage::Link(url)
+            }
+            None => match &raw_work.file {
+                Some(f) => CoverOrImage::AudioFile(f.to_string()),
+                None => {
+                    return Err(anyhow::Error::msg(
+                        "Could not find a suitable display. Please ensure one of the following is set: `link`, `cover`, `file`.",
+                    ))?;
+                }
+            },
+        },
+    };
+
+    Ok((
+        WorkMeta {
+            title: raw_work.title,
+            author: raw_work.author,
+            collaborators: raw_work.collaborators,
+            date: raw_work.date,
+            short: raw_work.short,
+            display: coi,
+            cover_image: raw_work.cover_image,
+            link: raw_work.link,
+            file: raw_work.file,
+            remix_original_work: raw_work.remix_original_work,
+            featured: raw_work.featured,
+            streaming: raw_work.streaming,
+            duration_seconds: raw_work.duration_seconds,
+        },
+        content,
+    ))
+}
+
 pub fn parse_and_format<Metadata>(
-    sack: &Sack<Data>,
+    sack: &Context<SiteData>,
     context: &Metadata,
     environment: &Environment,
     content: &str,
@@ -64,10 +108,10 @@ where
                             id,
                         } => {
                             let url_utf8 = Utf8PathBuf::from(dest_url.as_ref());
-                            if let Ok(picture) = sack.get_picture(&url_utf8) {
+                            if let Ok(picture) = sack.get::<Image>(&url_utf8) {
                                 Tag::Image {
                                     link_type,
-                                    dest_url: CowStr::from(picture.to_string()),
+                                    dest_url: CowStr::from(picture.path.to_string()),
                                     title,
                                     id,
                                 }

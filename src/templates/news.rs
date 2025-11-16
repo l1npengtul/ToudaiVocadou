@@ -1,21 +1,22 @@
-use crate::Data;
-use crate::metadata::Metadata;
+use crate::lnk;
 use crate::post::PostMeta;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
 use crate::util::shorten;
+use crate::{SiteData, metadata::Metadata};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD_NO_PAD;
-use hauchiwa::Sack;
+use hauchiwa::Context;
+use hauchiwa::RuntimeError;
 use maud::{Markup, PreEscaped, html};
 use std::collections::HashMap;
 
 pub fn news_posts(
-    sack: &Sack<Data>,
+    sack: &Context<SiteData>,
     site_map: &SiteMap,
     name_map: &HashMap<String, String>,
-) -> Markup {
+) -> Result<Markup, RuntimeError> {
     // TODO: pagination. this will get long! yell at peng if we get >100!
 
     let inner = html! {
@@ -28,17 +29,20 @@ pub fn news_posts(
 
         section #list {
             .listcontainer {
-                @for (post_meta, short) in &site_map.posts {
-                    (post_card(post_meta, short, name_map))
+                h3 {
+                    "公式ポスト"
+                }
+                @for post_meta in &site_map.official_posts {
+                    (post_card(post_meta, name_map)?)
                 }
             }
         }
     };
 
     let metadata = Metadata {
-        page_title: "作品集合".to_string(),
+        page_title: "ニュース".to_string(),
         page_image: None,
-        canonical_link: "/works.html".to_string(),
+        canonical_link: "/news.html".to_string(),
         section: Sections::News,
         description: Some("東京大学ボカロP同好会のニュース".to_string()),
         author: None,
@@ -48,22 +52,27 @@ pub fn news_posts(
     base(sack, &metadata, Some(&[]), inner)
 }
 
-pub fn post_card(post_meta: &PostMeta, short: &str, name_map: &HashMap<String, String>) -> Markup {
+pub fn post_card(
+    post_meta: &PostMeta,
+    name_map: &HashMap<String, String>,
+) -> Result<Markup, RuntimeError> {
     let image = match &post_meta.header_image {
         None => "/images/gray.jpg".to_string(),
         Some(i) => i.clone(),
     };
 
-    let author_name = name_map.get(&post_meta.author).expect("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info");
+    let author_name = name_map.get(&post_meta.author).ok_or(RuntimeError::msg("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info".to_string()))?;
 
-    html! {
+    let post_short = post_meta.short.as_ref();
+
+    Ok(html! {
         .item-card {
             .item-image {
                 img class="img-placeholder" href=(image) {}
             }
             .item-title {
                 h3 {
-                    a href=(format!("/news/{}.html", post_reference(post_meta))) {
+                    a href=(lnk(format!("/news/{}.html", post_reference(post_meta)))) {
                         (post_meta.title)
                     }
                 }
@@ -74,31 +83,47 @@ pub fn post_card(post_meta: &PostMeta, short: &str, name_map: &HashMap<String, S
                     (author_name)
                 }
                 p {
-                    (short)
+                    @if post_meta.official {
+                        "⭐ 公式"
+                    }
+                }
+                p {
+                    @if let Some(short) = post_short {
+                        (short)
+                    } @else {
+                        em {
+                            "筋が提供されませんでした。"
+                        }
+                    }
                 }
             }
         }
-    }
+    })
 }
 
 pub fn post_detail(
-    sack: &Sack<Data>,
+    sack: &Context<SiteData>,
     post_meta: &PostMeta,
     content: &str,
     name_map: &HashMap<String, String>,
-) -> Markup {
-    let author_name = name_map.get(&post_meta.author).expect("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info");
+) -> Result<Markup, RuntimeError> {
+    let author_name = name_map.get(&post_meta.author).ok_or(RuntimeError::msg("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info".to_string()))?;
 
     let inner = html! {
         section #post-detail {
             .member-detail-container {
                 h2 { (post_meta.title) }
                 p { (post_meta.date) }
-                a href=(format!("/members/{}.html", post_meta.author)) { p { (author_name) } }
+                @if post_meta.official {
+                    p {
+                        "⭐: 東大ボカロP同好会の公式ポスト"
+                    }
+                }
+                a href=(lnk(format!("/members/{}.html", post_meta.author))) { p { (author_name) } }
                 .member-profile {
                     @if let Some(image) = &post_meta.header_image {
                         .member-profile-image {
-                            img href=(image) alt="header" { }
+                            img href=(image) alt="header image" { }
                         }
                     }
                 }

@@ -5,14 +5,15 @@ use crate::templates::base::base;
 use crate::templates::functions::embed::embed;
 use crate::templates::functions::sns::sns_icon;
 use crate::templates::partials::navbar::Sections;
-use crate::templates::works::work_reference;
+use crate::templates::works::{thumbnail, work_reference};
 use crate::work::WorkMeta;
-use crate::{Data, image};
-use hauchiwa::Sack;
+use crate::{SiteData, image};
+use hauchiwa::Context;
+use hauchiwa::RuntimeError;
 use maud::{Markup, PreEscaped, html};
 use std::cmp::Ordering;
 
-pub fn members(sack: &Sack<Data>, site_map: &SiteMap) -> Markup {
+pub fn members(sack: &Context<SiteData>, site_map: &SiteMap) -> Result<Markup, RuntimeError> {
     let mut site_members = site_map.members.clone();
     site_members.sort_by(|a, b| {
         let a_str = a.position.clone().unwrap_or_default();
@@ -59,7 +60,7 @@ pub fn members(sack: &Sack<Data>, site_map: &SiteMap) -> Markup {
             .zcontainer {
                 .member-grid {
                     @for member in &site_members {
-                        (member_card(sack, member))
+                        (member_card(sack, member)?)
                     }
                 }
             }
@@ -79,14 +80,14 @@ pub fn members(sack: &Sack<Data>, site_map: &SiteMap) -> Markup {
     base(sack, &metadata, None, inner)
 }
 
-pub fn member_card(sack: &Sack<Data>, member: &MemberMeta) -> Markup {
+pub fn member_card(sack: &Context<SiteData>, member: &MemberMeta) -> Result<Markup, RuntimeError> {
     let member_links_len = member.links.len();
-    html! {
+    Ok(html! {
         .member-item {
             a .member-link href=(format!("/members/{}.html", member.ascii_name)) {
                 .member-card {
                     .member-image .img-placeholder {
-                        img .member-image .img-placeholder src=(image(sack, format!("/icon/{}.jpg", member.ascii_name))) alt=(member.name); // FIXME
+                        img .member-image .img-placeholder src=(image(sack, format!("/icon/{}.jpg", member.ascii_name))?) alt=(member.name); // FIXME
                     }
                     .member-info #(member.ascii_name) {
                         h3 { (member.name) }
@@ -110,15 +111,15 @@ pub fn member_card(sack: &Sack<Data>, member: &MemberMeta) -> Markup {
                 }
             }
         }
-    }
+    })
 }
 
 pub fn member_detail(
-    sack: &Sack<Data>,
+    sack: &Context<SiteData>,
     member: &MemberMeta,
     featured_works: &Vec<&WorkMeta>,
     content: &str,
-) -> Markup {
+) -> Result<Markup, RuntimeError> {
     let this_featured_work = featured_works
         .iter()
         .filter(|featured| featured.author == member.ascii_name)
@@ -129,7 +130,7 @@ pub fn member_detail(
             .member-detail-container {
                 .member-profile {
                     .member-profile-image {
-                        img .img-placeholder src=(image(sack, format!("/icon/{}.jpg", member.ascii_name))) alt=(member.name);
+                        img .img-placeholder src=(image(sack, format!("/icon/{}.jpg", member.ascii_name))?) alt=(member.name);
                     }
                     .member-profile-info {
                         h2 { (member.name) }
@@ -147,12 +148,20 @@ pub fn member_detail(
                     }
                 }
             }
+
             .member-featured-works {
                 h3 { "代表作品" }
                 .container {
                     @for featured in &this_featured_work {
-                        (featured_work_item_detail(featured))
+                        (featured_work_item_detail(sack, featured)?)
                     }
+                }
+            }
+
+            .member-featured-works {
+                h3 { "最近のポスト" }
+                .container {
+
                 }
             }
 
@@ -169,14 +178,17 @@ pub fn member_detail(
     base(sack, &metadata, None, inner)
 }
 
-pub fn featured_work_item_detail(item: &WorkMeta) -> Markup {
-    let work_ref = work_reference(&item.link);
+pub fn featured_work_item_detail(
+    sack: &Context<SiteData>,
+    item: &WorkMeta,
+) -> Result<Markup, RuntimeError> {
+    let work_ref = work_reference(&item.title, &item.author);
 
-    html! {
+    Ok(html! {
         .work-item-detail id=(work_ref) {
             h4 { (item.title) }
             .work-youtube-container {
-                (embed(item.link.as_str()))
+                (thumbnail(sack, item)?)
             }
 
             .work-description {
@@ -194,5 +206,39 @@ pub fn featured_work_item_detail(item: &WorkMeta) -> Markup {
                 }
             }
         }
-    }
+    })
+}
+
+pub fn big_display_for_item(
+    id: &str,
+    detailed: Option<&str>,
+    title: &str,
+    link: &str,
+    short: Option<&str>,
+) -> Result<Markup, RuntimeError> {
+    Ok(html! {
+        .work-item-detail id=(id) {
+            h4 { (title) }
+            .work-youtube-container {
+                (embed(link)?)
+            }
+
+            .work-description {
+                @if let Some(desc) = short {
+                    p { (desc) }
+                }
+                @else {
+                    p {}
+                }
+            }
+
+            @if let Some(detail) = detailed {
+                .back-button{
+                    a href=(detail) {
+                        "詳しく見る"
+                    }
+                }
+            }
+        }
+    })
 }
