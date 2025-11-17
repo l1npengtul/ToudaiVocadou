@@ -18,12 +18,11 @@ pub struct WorkMeta {
     pub date: Date,
     #[serde(default)]
     pub short: Option<String>,
-    #[serde(skip)]
     pub display: CoverOrImage,
     #[serde(default)]
     pub cover_image: Option<String>,
     #[serde(default)]
-    pub link: Option<String>,
+    pub link: Option<Url>,
     #[serde(default)]
     pub file: Option<String>,
     pub remix_original_work: Option<String>, // The link to the original work if it is a remix.
@@ -49,7 +48,7 @@ pub struct RawWorkMeta {
     #[serde(default)]
     pub cover_image: Option<String>,
     #[serde(default)]
-    pub link: Option<String>,
+    pub link: Option<Url>,
     #[serde(default)]
     pub file: Option<String>,
     pub remix_original_work: Option<String>, // The link to the original work if it is a remix.

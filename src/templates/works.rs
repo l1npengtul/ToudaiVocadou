@@ -103,7 +103,7 @@ pub fn work_card(
             }
             .item-title {
                 h3 {
-                    a href=(lnk(format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author)))){
+                    a href=(lnk(sack, format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author)))){
                         (work_meta.title)
                     }
                 }
@@ -153,7 +153,7 @@ pub fn album_card(
             .item-title {
                 h3 {
                     a href=(
-                        lnk(format!("works/albums/{}.html", album_reference(&album_meta.title, &album_meta.front_cover)))
+                        lnk(sack, format!("works/albums/{}.html", album_reference(&album_meta.title, &album_meta.front_cover)))
                     ) {
                         (album_meta.title)
                     }
@@ -181,7 +181,7 @@ pub fn album_detail(
     let contributors = album_meta.contributors.iter().map(|contributor| {
         let ascii_name = name_map.get(contributor).unwrap();
         html! {
-            a href=(lnk(format!("members/{}.html", ascii_name))) {
+            a href=(lnk(sack, format!("members/{}.html", ascii_name))) {
                 (contributor)
             }
         }
@@ -240,7 +240,7 @@ pub fn album_detail(
         }
 
         .back-button{
-            a href=(lnk("works.html")) {
+            a href="../works.html" {
                 "リリース集合一覧に戻る"
             }
         }
@@ -296,7 +296,7 @@ pub fn work_detail(
                                 h4 { "このリリースはメンバーページでフィーチャーされています。" }
                             }
                         }
-                        a href=(lnk(format!("members/{}.html", work_meta.author))) { p { (author_name) } }
+                        a href=(lnk(sack, format!("members/{}.html", work_meta.author))) { p { (author_name) } }
                         hr {}
                         @if let Some(short) = &work_meta.short {
                             p { (short) }
@@ -310,7 +310,7 @@ pub fn work_detail(
         }
 
         .back-button{
-            a href=(lnk("works.html")) {
+            a href="../works.html" {
                 "リリース集合一覧に戻る"
             }
         }

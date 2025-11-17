@@ -44,7 +44,7 @@ pub fn render_metadata(
         _ => html! {},
     };
 
-    let canonical_link = lnk(&metadata.canonical_link);
+    let canonical_link = lnk(sack, &metadata.canonical_link);
 
     Ok(html! {
         title { (&metadata.page_title) }

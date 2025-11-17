@@ -104,7 +104,7 @@ pub fn member_card(sack: &Context<SiteData>, member: &MemberMeta) -> Result<Mark
                                 .sns-icon-size {}
                             }
                             @for link in &member.links {
-                                (sns_icon(link))
+                                (sns_icon(sack, link)?)
                             }
                         }
                     }
@@ -142,7 +142,7 @@ pub fn member_detail(
                         }
                         .member-links {
                             @for link in &member.links {
-                                (sns_icon(link))
+                                (sns_icon(sack, link)?)
                             }
                         }
                     }
@@ -173,7 +173,7 @@ pub fn member_detail(
         }
     };
 
-    let metadata: Metadata = member.clone().into();
+    let metadata = MemberMeta::to_metadata(sack, member.clone());
 
     base(sack, &metadata, None, inner)
 }

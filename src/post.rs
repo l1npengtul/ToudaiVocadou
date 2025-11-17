@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use toml::value::Date;
+use url::Url;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PostMeta {
@@ -16,5 +17,5 @@ pub struct PostMeta {
     pub official: bool,
 
     #[serde(default)]
-    pub social_links: Vec<String>,
+    pub social_links: Vec<Url>,
 }

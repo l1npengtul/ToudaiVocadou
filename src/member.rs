@@ -18,8 +18,8 @@ pub struct MemberMeta {
     pub links: HashSet<String>, // SNSリンク
 }
 
-impl From<MemberMeta> for Metadata {
-    fn from(value: MemberMeta) -> Self {
+impl MemberMeta {
+    pub fn to_metadata(sack: &Context<SiteData>, value: MemberMeta) -> Metadata {
         let page_title = if value.name == value.ascii_name {
             value.name.clone()
         } else {
@@ -28,7 +28,7 @@ impl From<MemberMeta> for Metadata {
 
         Metadata {
             page_title: format!("{page_title} - 東京大学ボカロP同好会"),
-            page_image: Some(lnk(format!("icon/{}.jpg", value.ascii_name))),
+            page_image: Some(lnk(sack, format!("icon/{}.jpg", value.ascii_name))),
             canonical_link: format!("members/{}.html", value.ascii_name),
             section: Sections::MemberProfile,
             description: Some(value.short),

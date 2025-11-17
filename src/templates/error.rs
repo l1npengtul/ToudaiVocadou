@@ -23,7 +23,7 @@ pub fn notfound(sack: &Context<SiteData>) -> Result<Markup, RuntimeError> {
     let meta = Metadata {
         page_title: "404 - このページを見つかりませんでした。".to_string(),
         page_image: None,
-        canonical_link: lnk("404.html"),
+        canonical_link: lnk(sack, "404.html"),
         section: Sections::Home,
         description: None,
         author: None,

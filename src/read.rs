@@ -36,10 +36,7 @@ pub fn parse_work_meta(file: &str) -> Result<(WorkMeta, String), anyhow::Error> 
     let coi = match &raw_work.cover_image {
         Some(coverimg) => CoverOrImage::Cover(coverimg.to_string()),
         None => match &raw_work.link {
-            Some(wlnl) => {
-                let url = Url::parse(&wlnl)?;
-                CoverOrImage::Link(url)
-            }
+            Some(wlnl) => CoverOrImage::Link(wlnl.clone()),
             None => match &raw_work.file {
                 Some(f) => CoverOrImage::AudioFile(f.to_string()),
                 None => {
@@ -71,67 +68,67 @@ pub fn parse_work_meta(file: &str) -> Result<(WorkMeta, String), anyhow::Error> 
     ))
 }
 
-pub fn parse_and_format<Metadata>(
-    sack: &Context<SiteData>,
-    context: &Metadata,
-    environment: &Environment,
-    content: &str,
-) -> Result<String, anyhow::Error>
-where
-    Metadata: Serialize,
-{
-    let rendering = environment.render_str(content, context)?;
+// pub fn parse_and_format<Metadata>(
+//     sack: &Context<SiteData>,
+//     context: &Metadata,
+//     environment: &Environment,
+//     content: &str,
+// ) -> Result<String, anyhow::Error>
+// where
+//     Metadata: Serialize,
+// {
+//     let rendering = environment.render_str(content, context)?;
 
-    let markdown_opts = Options::ENABLE_DEFINITION_LIST
-        | Options::ENABLE_FOOTNOTES
-        | Options::ENABLE_SMART_PUNCTUATION
-        | Options::ENABLE_SUBSCRIPT
-        | Options::ENABLE_SUPERSCRIPT
-        | Options::ENABLE_TABLES
-        | Options::ENABLE_TASKLISTS
-        | Options::ENABLE_STRIKETHROUGH;
+//     let markdown_opts = Options::ENABLE_DEFINITION_LIST
+//         | Options::ENABLE_FOOTNOTES
+//         | Options::ENABLE_SMART_PUNCTUATION
+//         | Options::ENABLE_SUBSCRIPT
+//         | Options::ENABLE_SUPERSCRIPT
+//         | Options::ENABLE_TABLES
+//         | Options::ENABLE_TASKLISTS
+//         | Options::ENABLE_STRIKETHROUGH;
 
-    let mut output_str_buf = String::new();
+//     let mut output_str_buf = String::new();
 
-    let parser = Parser::new_ext(&rendering, markdown_opts);
+//     let parser = Parser::new_ext(&rendering, markdown_opts);
 
-    push_html(
-        &mut output_str_buf,
-        parser.map(|event| -> Event {
-            match event {
-                Event::Start(start) => {
-                    let tag = match start {
-                        Tag::Image {
-                            link_type,
-                            dest_url,
-                            title,
-                            id,
-                        } => {
-                            let url_utf8 = Utf8PathBuf::from(dest_url.as_ref());
-                            if let Ok(picture) = sack.get::<Image>(&url_utf8) {
-                                Tag::Image {
-                                    link_type,
-                                    dest_url: CowStr::from(picture.path.to_string()),
-                                    title,
-                                    id,
-                                }
-                            } else {
-                                Tag::Image {
-                                    link_type,
-                                    dest_url,
-                                    title,
-                                    id,
-                                }
-                            }
-                        }
-                        other => other,
-                    };
-                    Event::Start(tag)
-                }
-                e => e,
-            }
-        }),
-    );
+//     push_html(
+//         &mut output_str_buf,
+//         parser.map(|event| -> Event {
+//             match event {
+//                 Event::Start(start) => {
+//                     let tag = match start {
+//                         Tag::Image {
+//                             link_type,
+//                             dest_url,
+//                             title,
+//                             id,
+//                         } => {
+//                             let url_utf8 = Utf8PathBuf::from(dest_url.as_ref());
+//                             if let Ok(picture) = sack.get::<Image>(&url_utf8) {
+//                                 Tag::Image {
+//                                     link_type,
+//                                     dest_url: CowStr::from(picture.path.to_string()),
+//                                     title,
+//                                     id,
+//                                 }
+//                             } else {
+//                                 Tag::Image {
+//                                     link_type,
+//                                     dest_url,
+//                                     title,
+//                                     id,
+//                                 }
+//                             }
+//                         }
+//                         other => other,
+//                     };
+//                     Event::Start(tag)
+//                 }
+//                 e => e,
+//             }
+//         }),
+//     );
 
-    Ok(output_str_buf)
-}
+//     Ok(output_str_buf)
+// }

@@ -1,6 +1,5 @@
-use maud::{Markup, html};
-
 use crate::lnk;
+use maud::{Markup, html};
 
 pub fn member(to_link: &str) -> Markup {
     html! {

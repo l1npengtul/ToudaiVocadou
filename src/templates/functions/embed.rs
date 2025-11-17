@@ -1,6 +1,7 @@
 use crate::{die_linky::SocialLinkType, lnk_s3};
 use anyhow::Error;
 use maud::{Render, html};
+use minijinja::{Error as JinjaError, ErrorKind};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -51,7 +52,7 @@ pub fn embed(link: &str) -> Result<impl Render, Error> {
             ))?;
 
             if bluesky_oembed.status() != StatusCode::OK {
-                panic!("failed to get bluesky oembed - try building again or fixing this url!")
+                return Err(Error::msg("failed to get bluesky embed"));
             }
 
             let embed_html = bluesky_oembed.json::<OEmbed>()?;
@@ -66,7 +67,7 @@ pub fn embed(link: &str) -> Result<impl Render, Error> {
                 });
             }
 
-            panic!("returned oembed did not match any known items.")
+            return Err(Error::msg("returned oembed did not match any known items."));
         }
         SocialLinkType::Youtube => {
             let youtube_video_id = url_parse
@@ -95,7 +96,7 @@ pub fn embed(link: &str) -> Result<impl Render, Error> {
                 }
             })
         }
-        _ => panic!("unsupported embed type."),
+        _ => return Err(Error::msg("unsupported embed type")),
     }
 
     // soundcloud embed
@@ -120,6 +121,9 @@ pub struct OEmbed {
     pub html: Option<String>,
 }
 
-pub fn jinja_embed(link: &str) -> Result<String, anyhow::Error> {
-    Ok(embed(link)?.render().into_string())
+pub fn jinja_embed(link: &str) -> Result<String, JinjaError> {
+    Ok(embed(link)
+        .map_err(|why| JinjaError::new(ErrorKind::InvalidOperation, why.to_string()))?
+        .render()
+        .into_string())
 }

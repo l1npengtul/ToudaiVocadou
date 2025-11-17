@@ -30,7 +30,7 @@ where
                 .main-content-container {
                     (inner)
                 }
-                (footer())
+                (footer(sack))
             }
         }
     })
