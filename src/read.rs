@@ -1,14 +1,12 @@
+use std::fs::File;
+use std::io::Read;
+use std::str::FromStr;
+
+use crate::FRONT_MATTER_SPLIT;
 use crate::work::{CoverOrImage, RawWorkMeta, WorkMeta};
-use crate::{FRONT_MATTER_SPLIT, SiteData};
-use camino::Utf8PathBuf;
-use hauchiwa::Context;
-use hauchiwa::loader::Image;
-use minijinja::Environment;
-use pulldown_cmark::html::push_html;
-use pulldown_cmark::{CowStr, Event, Options, Parser, Tag};
-use serde::Serialize;
+use hauchiwa::Page;
+use hauchiwa::RuntimeError;
 use serde::de::DeserializeOwned;
-use url::Url;
 
 pub fn parse_front_matter_and_fetch_contents<Metadata>(
     file: &str,
@@ -68,67 +66,14 @@ pub fn parse_work_meta(file: &str) -> Result<(WorkMeta, String), anyhow::Error> 
     ))
 }
 
-// pub fn parse_and_format<Metadata>(
-//     sack: &Context<SiteData>,
-//     context: &Metadata,
-//     environment: &Environment,
-//     content: &str,
-// ) -> Result<String, anyhow::Error>
-// where
-//     Metadata: Serialize,
-// {
-//     let rendering = environment.render_str(content, context)?;
-
-//     let markdown_opts = Options::ENABLE_DEFINITION_LIST
-//         | Options::ENABLE_FOOTNOTES
-//         | Options::ENABLE_SMART_PUNCTUATION
-//         | Options::ENABLE_SUBSCRIPT
-//         | Options::ENABLE_SUPERSCRIPT
-//         | Options::ENABLE_TABLES
-//         | Options::ENABLE_TASKLISTS
-//         | Options::ENABLE_STRIKETHROUGH;
-
-//     let mut output_str_buf = String::new();
-
-//     let parser = Parser::new_ext(&rendering, markdown_opts);
-
-//     push_html(
-//         &mut output_str_buf,
-//         parser.map(|event| -> Event {
-//             match event {
-//                 Event::Start(start) => {
-//                     let tag = match start {
-//                         Tag::Image {
-//                             link_type,
-//                             dest_url,
-//                             title,
-//                             id,
-//                         } => {
-//                             let url_utf8 = Utf8PathBuf::from(dest_url.as_ref());
-//                             if let Ok(picture) = sack.get::<Image>(&url_utf8) {
-//                                 Tag::Image {
-//                                     link_type,
-//                                     dest_url: CowStr::from(picture.path.to_string()),
-//                                     title,
-//                                     id,
-//                                 }
-//                             } else {
-//                                 Tag::Image {
-//                                     link_type,
-//                                     dest_url,
-//                                     title,
-//                                     id,
-//                                 }
-//                             }
-//                         }
-//                         other => other,
-//                     };
-//                     Event::Start(tag)
-//                 }
-//                 e => e,
-//             }
-//         }),
-//     );
-
-//     Ok(output_str_buf)
-// }
+pub fn robots_txt() -> Result<Page, RuntimeError> {
+    let mut robots = String::new();
+    File::open("robots.txt")
+        .unwrap()
+        .read_to_string(&mut robots)
+        .unwrap();
+    Ok(Page::text(
+        camino::Utf8PathBuf::from_str("robots.txt")?,
+        robots,
+    ))
+}

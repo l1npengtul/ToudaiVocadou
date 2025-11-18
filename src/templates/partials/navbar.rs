@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use maud::{Markup, html};
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +14,13 @@ pub enum Sections {
     NewsPost,
     Works,
     WorksPost,
+    AlbumPost,
+}
+
+impl Display for Sections {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
 }
 
 pub fn navbar(current_section: Sections) -> Markup {

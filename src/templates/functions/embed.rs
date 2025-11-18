@@ -1,4 +1,4 @@
-use crate::{die_linky::SocialLinkType, lnk_s3};
+use crate::{die_linky::SocialLinkType, util::lnk_s3};
 use anyhow::Error;
 use maud::{Render, html};
 use minijinja::{Error as JinjaError, ErrorKind};
@@ -67,7 +67,7 @@ pub fn embed(link: &str) -> Result<impl Render, Error> {
                 });
             }
 
-            return Err(Error::msg("returned oembed did not match any known items."));
+            Err(Error::msg("returned oembed did not match any known items."))
         }
         SocialLinkType::Youtube => {
             let youtube_video_id = url_parse
@@ -96,7 +96,7 @@ pub fn embed(link: &str) -> Result<impl Render, Error> {
                 }
             })
         }
-        _ => return Err(Error::msg("unsupported embed type")),
+        _ => Err(Error::msg("unsupported embed type")),
     }
 
     // soundcloud embed

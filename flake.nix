@@ -41,6 +41,8 @@
               rustup
               simple-http-server
               http-server
+              esbuild
+              lldb
             ]);
 
           env.RUST_SRC_PATH = "${rustbin}/lib/rustlib/src/rust/library";

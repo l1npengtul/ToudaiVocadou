@@ -1,32 +1,40 @@
 use crate::album::AlbumMeta;
 use crate::member::MemberMeta;
 use crate::post::PostMeta;
-use crate::read::{parse_front_matter_and_fetch_contents, parse_work_meta};
+use crate::read::{parse_front_matter_and_fetch_contents, parse_work_meta, robots_txt};
+use crate::sitemap::SiteMap;
 use crate::templates::error::notfound;
-use crate::templates::functions::embed::jinja_embed;
+use crate::templates::functions::embed::{embed, jinja_embed};
 use crate::templates::functions::member::jinja_member;
-use crate::templates::functions::sns::{jinja_sns_icon, sns_icon};
+use crate::templates::functions::sns::jinja_sns_icon;
 use crate::templates::index::index;
-use crate::util::SvgData;
-use crate::work::WorkMeta;
-use camino::Utf8PathBuf;
+use crate::templates::members::{member_detail, members as member_overview};
+use crate::templates::news::{news_posts, post_detail, post_reference};
+use crate::templates::partials::navbar::Sections;
+use crate::templates::works::{
+    album_detail, album_reference, work_detail, work_reference, works as works_overview,
+};
+use crate::util::{
+    AudioFile, SvgData, lnk, markup_to_page, render_metadata_and_final_page, set_external_bin_url,
+    set_site_root, set_site_url, site_root,
+};
+use crate::work::{DisplayWorkMeta, WorkMeta};
 use clap::{Parser, ValueEnum};
 use hauchiwa::RuntimeError;
-use hauchiwa::loader::Image;
-use hauchiwa::{Context, Page, Website, loader};
-use log::{error, info, warn};
-use maud::Markup;
+use hauchiwa::loader::Content;
+use hauchiwa::{Page, Website, loader};
+use log::{error, info};
+use maud::{Render, html};
 use minijinja::Environment;
+use minijinja_contrib::add_to_environment;
+use minijinja_contrib::pycompat::unknown_method_callback;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::Read;
-use std::str::FromStr;
-use std::sync::{Arc, OnceLock};
+use std::path::PathBuf;
+use std::time::Instant;
 use url::Url;
 
 mod album;
 mod die_linky;
-mod featured_work;
 mod member;
 mod metadata;
 mod optimize;
@@ -39,58 +47,22 @@ mod work;
 
 pub const FRONT_MATTER_SPLIT: &str = "===";
 
-pub fn lnk(url: impl AsRef<str>) -> String {
-    static SITEROOT: OnceLock<String> = OnceLock::new();
-    let root = SITEROOT
-        .get_or_init(|| std::env::var("SITEROOT").unwrap_or("toudaivocadou.org".to_string()));
-
-    slash_guard(root, url.as_ref())
-}
-
-pub fn lnk_s3(url: impl AsRef<str>) -> String {
-    static EXTERNALROOT: OnceLock<String> = OnceLock::new();
-
-    let url = url.as_ref();
-
-    if let Ok(u) = Url::parse(url) {
-        warn!("Warning: Passed link to lnk that is already a url");
-        return u.to_string();
-    }
-
-    let root = if url.starts_with("miku:") {
-        EXTERNALROOT.get_or_init(|| {
-            std::env::var("EXTERNALROOT").unwrap_or("miku.toudaivocadou.org".to_string())
-        })
-    } else {
-        ""
-    };
-
-    slash_guard(root, url)
-}
-
-fn slash_guard(root: &str, thing: &str) -> String {
-    if thing.starts_with("/") {
-        format!("{root}{}", thing)
-    } else {
-        format!("{root}/{}", thing)
-    }
-}
-
-fn dataroot() -> &'static str {
-    static DATAROOT: OnceLock<String> = OnceLock::new();
-
-    DATAROOT.get_or_init(|| std::env::var("DATAROOT").unwrap_or(".".to_string()))
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct BuildData {
     pub name_map: HashMap<String, String>,
 }
 
 #[derive(Parser, Debug, Clone)]
+#[command(version, about, long_about = None)]
 struct Args {
-    #[clap(value_enum, index = 1, default_value = "build")]
-    mode: Mode,
+    #[clap(short, long, default_value = "0")]
+    build_id: u64,
+    #[clap(short, long, default_value = ".")]
+    data_root: PathBuf,
+    #[clap(short, long, default_value = "https://miku.toudaivocadou.org")]
+    external_url_root: Url,
+    #[clap(short, long, default_value = "https://toudaivocadou.org")]
+    site_url: String,
 }
 
 #[derive(ValueEnum, Debug, Clone, Copy)]
@@ -101,46 +73,47 @@ enum Mode {
 
 #[derive(Clone, Debug)]
 pub struct SiteData {
-    // pub artist_name_map: HashMap<String, String>,
     pub build_id: u64,
 }
 
-pub fn build_site(build_id: u64, siteroot: String) {
+pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
     let site_data = SiteData { build_id };
-    let website = Website::config()
+    info!("BUILD-{}: Configuring...", build_id);
+    let mut website = Website::config()
         .add_loaders([
             // load site content
             loader::glob_content(
-                dataroot(),
+                site_root(),
                 "members/[!_]*.md",
                 parse_front_matter_and_fetch_contents::<MemberMeta>,
             ),
             loader::glob_content(
-                dataroot(),
+                site_root(),
                 "posts/[!_]*.md",
                 parse_front_matter_and_fetch_contents::<PostMeta>,
             ),
-            loader::glob_content(dataroot(), "works/[!_]*.md", parse_work_meta),
+            loader::glob_content(site_root(), "works/[!_]*.md", parse_work_meta),
             loader::glob_content(
-                dataroot(),
+                site_root(),
                 "album/[!_]*.md",
                 parse_front_matter_and_fetch_contents::<AlbumMeta>,
             ),
             // load CSS
-            loader::glob_styles(dataroot(), "styles/[!_]*.css"),
+            loader::glob_styles(site_root(), "styles/*.css"),
             // load JS
-            loader::glob_scripts(dataroot(), "js/[!_]*.js"),
+            loader::glob_scripts(site_root(), "js/*.js"),
             // load images
-            loader::glob_images(dataroot(), "images/**/*.jpg"),
-            loader::glob_images(dataroot(), "images/**/*.png"),
-            loader::glob_images(dataroot(), "images/**/*.gif"),
-            loader::glob_images(dataroot(), "images/**/*.avif"),
+            loader::glob_images(site_root(), "images/**/*.jpg"),
+            loader::glob_images(site_root(), "images/**/*.png"),
+            loader::glob_images(site_root(), "images/**/*.gif"),
+            loader::glob_images(site_root(), "images/**/*.avif"),
             // SVG assets require special treatment, we dont want processing
-            loader::glob_assets(dataroot(), "assets/*.svg", |rt, data| {
+            loader::glob_assets(site_root(), "assets/**/*.svg", |rt, data| {
                 let path = rt.store(&data, "svg")?;
+                info!("Adding SVG {}", &path);
                 Ok(SvgData { path, data })
             }),
-            loader::glob_assets(dataroot(), "audio/**/*.ogg", |rt, data| {
+            loader::glob_assets(site_root(), "audio/**/*.ogg", |rt, data| {
                 rt.store(&data, "ogg")?;
                 Ok(AudioFile {})
             })
@@ -150,11 +123,11 @@ pub fn build_site(build_id: u64, siteroot: String) {
             Ok(vec![robots])
         })
         .add_task("STATIC: build index", |ctx| {
-            let index = markup_to_page(&ctx, "index.html", index(&ctx)?);
+            let index = markup_to_page( "index.html", index(&ctx)?);
             Ok(vec![index])
         })
         .add_task("STATIC: build 404", |ctx| {
-            let notfound = markup_to_page(&ctx, "404.html", notfound(&ctx)?);
+            let notfound = markup_to_page("404.html", notfound(&ctx)?);
             Ok(vec![notfound])
         })
         .add_task("DYNAMIC: build all dynamic content", |ctx| {
@@ -162,15 +135,17 @@ pub fn build_site(build_id: u64, siteroot: String) {
                 "BUILD-{}: Starting dynamic content build",
                 ctx.get_globals().data.build_id
             );
-            let members = ctx.glob_with_file::<MemberMeta>("*")?;
+            let start_time = Instant::now();
+
+            let members = ctx.glob_with_file::<Content<MemberMeta>>("members/[!_]*.md")?;
             // construct name map
             let member_ascii_to_name = members
                 .iter()
                 .map(|member_with_file| member_with_file.data)
-                .map(|member_meta| (member_meta.ascii_name.clone(), member_meta.name.clone()))
+                .map(|member_meta| (member_meta.meta.ascii_name.clone(), member_meta.meta.name.clone()))
                 .collect::<HashMap<String, String>>();
 
-            let works = ctx.glob_with_file::<WorkMeta>("*")?;
+            let works = ctx.glob_with_file::<Content<WorkMeta>>("works/[!_]*.md")?;
             info!(
                 "BUILD-{}: Ensuring all names exist in works.",
                 ctx.get_globals().data.build_id
@@ -178,18 +153,18 @@ pub fn build_site(build_id: u64, siteroot: String) {
             for work in works.iter() {
                 let file_path = &work.file.file;
                 let work_meta = work.data;
-                if !member_ascii_to_name.contains_key(&work_meta.author) {
-                    let error_str = format!("BUILD-{}: ファイル {}の内, メタデータフィルド`author`でエーラ発生: {} はメンバー中見つかりませんでした。 英語ネーム使うかどうか確認してください。", ctx.get_globals().data.build_id, file_path, &work_meta.author);
+                if !member_ascii_to_name.contains_key(&work_meta.meta.author) {
+                    let error_str = format!("BUILD-{}: ファイル {}の内, メタデータフィルド`author`でエーラ発生: {} はメンバー中見つかりませんでした。 英語ネーム使うかどうか確認してください。", ctx.get_globals().data.build_id, file_path, &work_meta.meta.author);
                     error!("{}", &error_str);
                     return Err(RuntimeError::msg(error_str))
                 }
-                for collaborator in &work_meta.collaborators {
+                for collaborator in &work_meta.meta.collaborators {
                     if !member_ascii_to_name.contains_key(collaborator) {
                         let error_str = format!("BUILD-{}: ファイル {}の内, メタデータフィルド`collaborators`でエーラ発生: {} はメンバー中見つかりませんでした。 英語ネーム使うかどうか確認してください。投稿者が東大ボカロP同好会のメンバーじゃないければ、`extra_collaborators`で入れてください。", ctx.get_globals().data.build_id, file_path, &collaborator);
                     error!("{}", &error_str);
                         return Err(RuntimeError::msg(error_str))
                     }
-                }                
+                }
             }
 
             info!(
@@ -197,11 +172,11 @@ pub fn build_site(build_id: u64, siteroot: String) {
                 ctx.get_globals().data.build_id
             );
 
-            let albums = ctx.glob_with_file::<AlbumMeta>("*")?;
+            let albums = ctx.glob_with_file::<Content<AlbumMeta>>("albums/[!_]*.md")?;
             for album in &albums {
                 let file_path = &album.file.file;
                 let album_meta = album.data;
-                for contributor in &album_meta.contributors {
+                for contributor in &album_meta.meta.contributors {
                     if !member_ascii_to_name.contains_key(contributor) {
                         let error_str = format!("BUILD-{}: ファイル {}の内, メタデータフィルド`contributors`でエーラ発生: {} はメンバー中見つかりませんでした。 英語ネーム使うかどうか確認してください。投稿者が東大ボカロP同好会のメンバーじゃないければ、`extra_contributors`で入れてください。", ctx.get_globals().data.build_id, file_path, &contributor);
                     error!("{}", &error_str);
@@ -215,13 +190,13 @@ pub fn build_site(build_id: u64, siteroot: String) {
                 ctx.get_globals().data.build_id
             );
 
-            let news = ctx.glob_with_file::<PostMeta>("*")?;
+            let news = ctx.glob_with_file::<Content<PostMeta>>("posts/[!_]*.md")?;
             for post in &news {
                 let file_path = &post.file.file;
                 let post_meta = post.data;
 
-                if !member_ascii_to_name.contains_key(&post_meta.author) {
-                        let error_str = format!("BUILD-{}: ファイル {}の内, メタデータフィルド`author`でエーラ発生: {} はメンバー中見つかりませんでした。 英語ネーム使うかどうか確認してください。", ctx.get_globals().data.build_id, file_path, &post_meta.author);
+                if !member_ascii_to_name.contains_key(&post_meta.meta.author) {
+                        let error_str = format!("BUILD-{}: ファイル {}の内, メタデータフィルド`author`でエーラ発生: {} はメンバー中見つかりませんでした。 英語ネーム使うかどうか確認してください。", ctx.get_globals().data.build_id, file_path, &post_meta.meta.author);
                     error!("{}", &error_str);
                         return Err(RuntimeError::msg(error_str))
                 }
@@ -238,319 +213,177 @@ pub fn build_site(build_id: u64, siteroot: String) {
                 ctx.get_globals().data.build_id
             );
 
-            let context = Arc::new(ctx);
+            info!(
+                "BUILD-{}: Construct: SiteMap.",
+                ctx.get_globals().data.build_id
+            );
+
+            let sitemap = SiteMap {
+                members: members.iter().map(|member| { &member.data.meta }).cloned().collect(),
+                official_posts: news.iter().map(|posts| &posts.data.meta).filter(|post| post.official).cloned().collect(),
+                posts: news.iter().map(|posts| &posts.data.meta).filter(|post| !post.official).cloned().collect(),
+                works: works.iter().map(|works| &works.data.meta).cloned().collect(),
+                albums: albums.iter().map(|album| &album.data.meta).cloned().collect(),
+                featured_works: works.iter().map(|works| &works.data.meta).filter(|work| work.featured).cloned().collect(),
+            };
+            // TODO: add "worked on albums" and "posts". 
+
+            info!(
+                "BUILD-{}: Construct: minijinja Environment.",
+                ctx.get_globals().data.build_id
+            );
 
             let mut environment = Environment::new();
 
-            let sns_ctx = context.clone();
-            let actx = 1;
-            environment.add_function("sns_link", move |link: &str| {
-                let a = actx;
-                // jinja_sns_icon(adw, link)
-            });
+            environment.add_function("sns_link", jinja_sns_icon);
             environment.add_function("sns_embed", jinja_embed);
-            environment.add_function("member", |member: &str| {
-                jinja_member(&ctx, member)
-            });
-            environment.add_global("SITE", lnk(&ctx, ""));
+            environment.add_function("member", jinja_member);
+            environment.add_global("SITE", lnk( ""));
+            add_to_environment(&mut environment);
+            environment.set_unknown_method_callback(unknown_method_callback);
 
+            info!(
+                "BUILD-{}: Building member pages.",
+                ctx.get_globals().data.build_id
+            );
+            let mut member_overview = vec![Page::html(lnk("/members.html"), member_overview(&ctx, &sitemap).map_err(|why| why.context("Build Member Overview /members.html"))?.into_string())];
+            let mut member_detail = members.iter().map(|member_page| {
+                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, member_page.data, Sections::MemberProfile, &member_page.data.meta.ascii_name, format!("/members/{}.html", &member_page.data.meta.ascii_name), |ctx, meta, sitemap, _, content| {
+                    member_detail(ctx, meta, &sitemap.featured_works, content)
+                })
+            }).collect::<Result<Vec<Page>, RuntimeError>>()?;
 
-            Ok(vec![])
-        });
+            info!(
+                "BUILD-{}: Finished building member pages.",
+                ctx.get_globals().data.build_id
+            );
+
+            info!(
+                "BUILD-{}: Building work & album pages.",
+                ctx.get_globals().data.build_id
+            );
+
+            let mut works_overview = vec![Page::html(lnk("/works.html"), works_overview(&ctx, &sitemap, &member_ascii_to_name).map_err(|why| why.context("Build Works Overview /works.html"))?.into_string())];
+
+            let mut works_detail = works.iter().map(|work_page| {
+                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, work_page.data, Sections::WorksPost, &work_page.data.meta.title, format!("/works/releases/{}.html", work_reference(&work_page.data.meta.title, &work_page.data.meta.author)), |ctx, meta, _, namemap, content| {
+                    work_detail(ctx, meta, namemap, content)
+                })
+            }).collect::<Result<Vec<Page>, RuntimeError>>()?;
+
+            info!(
+                "BUILD-{}: Finished building work pages.",
+                ctx.get_globals().data.build_id
+            );
+
+            let mut albums_detail = albums.iter().map(|album_page| {
+                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, album_page.data, Sections::AlbumPost, &album_page.data.meta.title, format!("/works/albums/{}.html", album_reference(&album_page.data.meta.title, &album_page.data.meta.front_cover)), |ctx, meta, _, namemap, content| {
+                    album_detail(ctx, meta, namemap, content)
+                })
+            }).collect::<Result<Vec<Page>, RuntimeError>>()?;
+
+            info!(
+                "BUILD-{}: Finished building album pages.",
+                ctx.get_globals().data.build_id
+            );
+
+            info!(
+                "BUILD-{}: Building post pages.",
+                ctx.get_globals().data.build_id
+            );
+
+            let mut post_overview = vec![Page::html(lnk("/news.html"), news_posts(&ctx, &sitemap, &member_ascii_to_name)?.into_string())];
+
+            let mut posts_detail = news.iter().map(|post_page| {
+                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, post_page.data, Sections::NewsPost, &post_page.data.meta.title, format!("/news/{}.html", post_reference(&post_page.data.meta)), |ctx, meta, _, namemap, content| {
+                    post_detail(ctx, meta, content, namemap)
+                })
+            }).collect::<Result<Vec<Page>, RuntimeError>>()?;
+
+            info!(
+                "BUILD-{}: Finished building post pages.",
+                ctx.get_globals().data.build_id
+            );
+
+            info!(
+                "BUILD-{}: Building works_list.json",
+                ctx.get_globals().data.build_id
+            );
+            // TODO: search?
+            let works_list = works.iter().enumerate().map(|(id, work)| {
+                let work_meta = &work.data.meta;
+                let display_name = member_ascii_to_name.get(&work_meta.author).ok_or(anyhow::Error::msg("wtf???? coudlnt find member???".to_string()))?;
+                let alt_desc = work_meta.short.as_ref().unwrap_or(&work_meta.title);
+                let embedded_html = match &work_meta.display {
+                    work::CoverOrImage::Cover(cover) => {
+                        (html! {
+                            img href=(cover) alt=(alt_desc) {}
+                        }).into_string()
+                    },
+                    work::CoverOrImage::Link(url) => embed(url.as_str())?.render().into_string(),
+                    work::CoverOrImage::AudioFile(lnk) => embed(lnk)?.render().into_string(),
+                };
+                Ok(DisplayWorkMeta {
+                    id: id as i32,
+                    title: work_meta.title.clone(),
+                    description: work_meta.short.clone(),
+                    on_site_link: lnk(format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author))),
+                    author_displayname: display_name.clone(),
+                    author_link: lnk(format!("/members/{}.html", work_meta.author)),
+                    embed_html: embedded_html,
+                })
+            }).collect::<Result<Vec<DisplayWorkMeta>, anyhow::Error>>().map_err(|why| {
+                RuntimeError::msg(why.to_string()).context("making works_list.json")
+            })?;
+            let works_list_serialize = serde_json::to_string(&works_list).map_err(|why| {
+                RuntimeError::msg(why.to_string()).context("serializing works_list.json")
+            })?;
+            let mut work_list_json = vec![Page::text(lnk("/works_list.json"), works_list_serialize)];
+            info!(
+                "BUILD-{}: Finished building works_list.json",
+                ctx.get_globals().data.build_id
+            );
+
+            info!(
+                "BUILD-{}: Collecting pages and finalizing...",
+                ctx.get_globals().data.build_id
+            );
+
+            let all_lengths = member_overview.len() + member_detail.len() + works_overview.len() + works_detail.len() + albums_detail.len() + post_overview.len() + posts_detail.len() + work_list_json.len();
+            let mut all_pages = Vec::with_capacity(all_lengths);
+            all_pages.append(&mut member_overview);
+            all_pages.append(&mut member_detail);
+            all_pages.append(&mut works_overview);
+            all_pages.append(&mut works_detail);
+            all_pages.append(&mut albums_detail);
+            all_pages.append(&mut post_overview);
+            all_pages.append(&mut posts_detail);
+            all_pages.append(&mut work_list_json);
+
+            let finish_instant = Instant::now();
+            let time_taken = finish_instant.duration_since(start_time);
+            info!(
+                "BUILD-{}: Finished build phase. {} pages, took {}s.",
+                ctx.get_globals().data.build_id, all_lengths, time_taken.as_secs_f32()
+            );
+
+            Ok(all_pages)
+        }).finish();
+    info!("BUILD-{}: Starting build...", build_id);
+    website.build(site_data)
 }
 
 fn main() {
+    env_logger::init();
     let args = Args::parse();
-    let script = format!("{}/js/script.js", dataroot());
+    set_external_bin_url(args.external_url_root.to_string());
+    set_site_root(
+        args.data_root
+            .to_str()
+            .expect("Invalid SITE_ROOT path!")
+            .to_string(),
+    );
+    set_site_url(args.site_url.to_string());
 
-    // let website = Website::config()
-    //     .add_collections(vec![
-    //         Collection::glob_with(dataroot(), "members/[!_]*", ["md"]),
-    //         Collection::glob_with(
-    //             dataroot(),
-    //             "posts/[!_]*",
-    //             ["md"],
-    //             parse_front_matter_and_fetch_contents::<PostMeta>,
-    //         ),
-    //         Collection::glob_with(
-    //             dataroot(),
-    //             "works/[!_]*",
-    //             ["md"],
-    //             parse_front_matter_and_fetch_contents::<WorkMeta>,
-    //         ),
-    //         Collection::glob_with(
-    //             dataroot(),
-    //             "albums/[!_]*",
-    //             ["md"],
-    //             parse_front_matter_and_fetch_contents::<AlbumMeta>,
-    //         ),
-    //     ])
-    //     .add_processors(vec![Processor::process_images([
-    //         "png", "jpg", "jpeg", "gif", "avif",
-    //     ])])
-    //     .add_styles([Utf8PathBuf::from(&format!("{}/css", dataroot()))])
-    //     .add_scripts([("script", script.as_str())])
-    //     .set_opts_sitemap("sitemap.xml")
-    //     .add_task(|sack| {
-    //         // build up our sitemap and metadatas
-    //         let members = sack.query_content::<MemberMeta>("*").unwrap();
-    //         let member_name_list = members
-    //             .iter()
-    //             .map(|x| x.meta.ascii_name.as_str())
-    //             .collect::<Vec<&str>>();
-
-    //         // this is a bunch of fancy logic to make the "random work" button work.
-    //         // what we do is that we
-    //         // 1. see what featured works members have
-    //         // 2. parse all works in the works/ folder
-    //         // 3. if the featured work also has a dedicated md file... create a 詳しく見る link to the work page on the featured work.
-    //         // 4. if the featured work does not exist ... create a "fake" card on the work. these dont have dates so they will always be set as
-    //         // published on some random date (we are NOT reaching out to the API to get the proper date - some future poor sap can do that)
-    //         // 5. gather all of this and put it in a JSON, which then the client side JS can consume to power the random work button.
-
-    //         let works = sack.query_content::<WorkMeta>("*").unwrap();
-    //         if !works.iter().all(|work| {
-    //             member_name_list.contains(&work.meta.author.as_str())
-    //                 && work
-    //                     .meta
-    //                     .collaborators
-    //                     .iter()
-    //                     .all(|collaborator| member_name_list.contains(&collaborator.as_str()))
-    //         }) {
-    //             panic!("work contains bad author.")
-    //         }
-
-    //         let albums = sack.query_content::<AlbumMeta>("*").unwrap();
-    //         if !albums.iter().all(|album| {
-    //             album
-    //                 .meta
-    //                 .contributors
-    //                 .iter()
-    //                 .all(|collaborator| member_name_list.contains(&collaborator.as_str()))
-    //         }) {
-    //             panic!("album contains bad contributor.")
-    //         }
-
-    //         // let works_urls = works
-    //         //     .iter()
-    //         //     .filter(|work| Option::is_some)
-    //         //     .map(|work| work.meta.link.clone())
-    //         //     .collect::<HashSet<String>>();
-
-    //         let featured_works = works
-    //             .iter()
-    //             .filter(|work| work.meta.featured == true)
-    //             .map(|work| work.meta)
-    //             .collect::<Vec<&WorkMeta>>();
-
-    //         let news_posts = sack.query_content::<PostMeta>("*").unwrap();
-    //         if !news_posts
-    //             .iter()
-    //             .all(|posts| member_name_list.contains(&posts.meta.author.as_str()))
-    //         {
-    //             panic!("post contains bad author.")
-    //         }
-
-    //         let sitemap = SiteMap {
-    //             members: members.iter().map(|x| x.meta).cloned().collect(),
-    //             posts: news_posts
-    //                 .iter()
-    //                 .map(|x| (x.meta.clone(), x.content.chars().take(100).collect()))
-    //                 .collect(),
-    //             works: works.iter().map(|x| x.meta).cloned().collect(),
-    //             albums: albums.iter().map(|x| x.meta).cloned().collect(),
-    //         };
-
-    //         let ascii_name_to_author = members
-    //             .iter()
-    //             .map(|auth_meta| {
-    //                 (
-    //                     auth_meta.meta.ascii_name.clone(),
-    //                     auth_meta.meta.name.clone(),
-    //                 )
-    //             })
-    //             .collect::<HashMap<String, String>>();
-
-    //         let mut robots = String::new();
-    //         File::open("robots.txt")
-    //             .unwrap()
-    //             .read_to_string(&mut robots)
-    //             .unwrap();
-
-    //         // do out set pages (index and members for now)
-    //         let mut set_pages = vec![
-    //             ("index.html".to_string(), index(&sack).into_string()),
-    //             (
-    //                 "members.html".to_string(),
-    //                 templates::members::members(&sack, &sitemap).into_string(),
-    //             ),
-    //             (
-    //                 "works.html".to_string(),
-    //                 templates::works::works(&sack, &sitemap, &ascii_name_to_author).into_string(),
-    //             ),
-    //             (
-    //                 "news.html".to_string(),
-    //                 templates::news::news_posts(&sack, &sitemap, &ascii_name_to_author)
-    //                     .into_string(),
-    //             ),
-    //             ("404.html".to_string(), notfound(&sack).into_string()),
-    //             ("robots.txt".to_string(), robots),
-    //         ];
-
-    //         // environment
-    //         let mut jinja_environment = Environment::new();
-    //         jinja_environment.add_function("sns_link", jinja_sns_icon);
-    //         jinja_environment.add_function("sns_embed", jinja_embed);
-    //         jinja_environment.add_function("member", jinja_member);
-    //         jinja_environment.add_global("SITE", lnk(""));
-
-    //         // render members
-
-    //         let mut works_list = vec![];
-
-    //         let member_detail = members
-    //             .into_iter()
-    //             .map(|member_page| -> Result<(String, String), anyhow::Error> {
-    //                 let content_html = parse_and_format(
-    //                     &sack,
-    //                     member_page.meta,
-    //                     &jinja_environment,
-    //                     member_page.content,
-    //                 )?;
-    //                 let rendered_page =
-    //                     member_detail(&sack, member_page.meta, &featured_works, &content_html)
-    //                         .into_string();
-    //                 let path = lnk(format!("members/{}.html", &member_page.meta.ascii_name));
-    //                 Ok((path, rendered_page))
-    //             })
-    //             .collect::<Result<Vec<(String, String)>, anyhow::Error>>()?;
-
-    //         let works_detail = works
-    //             .into_iter()
-    //             .map(|works_page| {
-    //                 works_list.push(works_page.meta.clone());
-
-    //                 let content_html = parse_and_format(
-    //                     &sack,
-    //                     works_page.meta,
-    //                     &jinja_environment,
-    //                     works_page.content,
-    //                 )?;
-    //                 let rendered_page = crate::templates::works::work_detail(
-    //                     &sack,
-    //                     works_page.meta,
-    //                     &ascii_name_to_author,
-    //                     &content_html,
-    //                 )
-    //                 .into_string();
-    //                 let path = format!(
-    //                     "works/{}.html",
-    //                     work_reference(&works_page.meta.title, &works_page.meta.author)
-    //                 );
-    //                 Ok((path, rendered_page))
-    //             })
-    //             .collect::<Result<Vec<(String, String)>, anyhow::Error>>()?;
-
-    //         let posts_detail = news_posts
-    //             .into_iter()
-    //             .map(|news_page| {
-    //                 let content_html = parse_and_format(
-    //                     &sack,
-    //                     news_page.meta,
-    //                     &jinja_environment,
-    //                     news_page.content,
-    //                 )?;
-    //                 let rendered_page = crate::templates::news::post_detail(
-    //                     &sack,
-    //                     news_page.meta,
-    //                     &content_html,
-    //                     &ascii_name_to_author,
-    //                 )
-    //                 .into_string();
-    //                 let path = lnk(format!("news/{}.html", post_reference(news_page.meta)));
-    //                 Ok((path, rendered_page))
-    //             })
-    //             .collect::<Result<Vec<(String, String)>, anyhow::Error>>()?;
-
-    //         set_pages.extend(member_detail);
-    //         set_pages.extend(works_detail);
-    //         set_pages.extend(posts_detail);
-
-    //         // generate the work list
-
-    //         let display_works = works_list
-    //             .into_iter()
-    //             .enumerate()
-    //             .map(|(idx, works)| DisplayWorkMeta {
-    //                 id: idx as i32,
-    //                 on_site_link: work_reference(&works.title, &works.author),
-    //                 embed_html: embed(&thumbnail(&sack, &works)).render().into_string(),
-    //                 title: works.title,
-    //                 description: works.short,
-    //                 author_link: ascii_name_to_author.get(&works.author).unwrap().clone(),
-    //                 author_displayname: works.author,
-    //                 collaborators: works.collaborators,
-    //                 remix_original_work: works.remix_original_work,
-    //             })
-    //             .collect::<Vec<DisplayWorkMeta>>();
-
-    //         let works_json =
-    //             serde_json::to_string(&display_works).expect("Failed to serialize works list");
-
-    //         set_pages.push(("works_list.json".to_string(), works_json));
-
-    //         // query posts
-    //         // query works
-
-    //         Ok(set_pages
-    //             .into_iter()
-    //             .map(|(path, page)| (Utf8PathBuf::from(path), page))
-    //             .collect())
-    //     })
-    //     .finish();
-
-    // match args.mode {
-    //     Mode::Build => website.build(SiteData {}).unwrap(),
-    //     Mode::Watch => website.watch(SiteData {}).unwrap(),
-    // }
-}
-
-pub fn image(sack: &Context<SiteData>, path: impl AsRef<str>) -> Result<String, RuntimeError> {
-    let path = path.as_ref();
-    if path.starts_with("miku:") {
-        return Ok(lnk_s3(path));
-    }
-
-    let picture_path = Utf8PathBuf::from(path);
-    let image = sack.get::<Image>(&picture_path)?;
-    Ok(lnk(sack, image.path.to_string()))
-}
-
-pub struct AudioFile {}
-
-pub fn audio(sack: &Context<SiteData>, path: impl AsRef<str>) -> Result<String, RuntimeError> {
-    let path = path.as_ref();
-    if path.starts_with("miku:") {
-        return Ok(lnk_s3(path));
-    }
-
-    let audio_path = Utf8PathBuf::from(path);
-    let audio = sack.glob_one_with_file::<AudioFile>(audio_path.as_str())?;
-    Ok(lnk(sack, audio.file.file.as_str()))
-}
-
-fn robots_txt() -> Result<Page, RuntimeError> {
-    let mut robots = String::new();
-    File::open("robots.txt")
-        .unwrap()
-        .read_to_string(&mut robots)
-        .unwrap();
-    Ok(Page::text(
-        camino::Utf8PathBuf::from_str("robots.txt")?,
-        robots,
-    ))
-}
-
-fn markup_to_page(sack: &Context<SiteData>, path: impl AsRef<str>, markup: Markup) -> Page {
-    Page::html(lnk(sack, path), &markup.0)
+    build_site(args.build_id).expect("Failed to build site!")
 }

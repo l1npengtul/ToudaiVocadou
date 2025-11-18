@@ -1,7 +1,8 @@
 use crate::metadata::Metadata;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
-use crate::{SiteData, image, lnk};
+use crate::util::image;
+use crate::{SiteData, lnk};
 use hauchiwa::Context;
 use hauchiwa::RuntimeError;
 use maud::{Markup, html};
@@ -10,8 +11,8 @@ pub fn index(context: &Context<SiteData>) -> Result<Markup, RuntimeError> {
     let meta = Metadata {
         page_title: "東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club"
             .to_string(),
-        page_image: Some(image(context, "/images/circle-photo.jpg")?),
-        canonical_link: lnk(context, "index.html"),
+        page_image: Some("images/circle-photo.jpg".to_string()),
+        canonical_link: lnk("index.html"),
         section: Sections::Home,
         description: Some(
             "東京大学ボカロP同好会は、ボーカロイド楽曲の制作を通じて交流するサークルです。"
@@ -40,7 +41,7 @@ pub fn index(context: &Context<SiteData>) -> Result<Markup, RuntimeError> {
                     p { "まだ設立したばかりのこのサークルで、一緒に音楽を楽しみながら成長しませんか？（サークル代表　三森）"}
                 }
                 .about-image {
-                    img .img-placeholder src="images/circle-photo.jpg" alt="サークル活動の様子" style="height: auto";
+                    img .img-placeholder src=(image(context, "images/circle-photo.jpg")?) alt="サークル活動の様子" style="height: auto";
                 }
             }
         }

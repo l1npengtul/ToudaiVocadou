@@ -1,5 +1,5 @@
 use crate::{
-    SiteData, image, lnk,
+    SiteData, lnk,
     metadata::Metadata,
     templates::{base::base, partials::navbar::Sections},
 };
@@ -9,8 +9,8 @@ use maud::{Markup, html};
 pub fn join(sack: &Context<SiteData>) -> Result<Markup, RuntimeError> {
     let meta = Metadata {
         page_title: "入会希望者へ - Joining Vocaloid Producer Club".to_string(),
-        page_image: Some(lnk(sack, image(sack, "images/circle-photo.jpg")?)),
-        canonical_link: lnk(sack, format!("join.html")),
+        page_image: Some("images/circle-photo.jpg".to_string()),
+        canonical_link: lnk("/join.html"),
         section: Sections::Join,
         author: None,
         date: None,

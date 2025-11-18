@@ -51,8 +51,7 @@ impl AlbumMeta {
                 .map(|name| match name_map.get(name) {
                     Some(n) => n,
                     None => panic!("{name}: not found"),
-                })
-                .into_iter(),
+                }),
         );
         all_contributors.extend(&self.extra_contributors);
 
@@ -96,23 +95,4 @@ pub enum AlbumType {
     Solo,
     GroupExternal,
     ToudaiVocadou,
-}
-
-#[derive(Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
-pub struct Track {
-    pub number: i32,
-    pub data: TrackData,
-}
-
-#[derive(Clone, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum TrackData {
-    Registered {
-        link: String,
-    },
-    Unregistered {
-        title: String,
-        author: String,
-        link: Option<String>,
-    },
 }

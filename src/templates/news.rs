@@ -6,7 +6,7 @@ use crate::templates::partials::navbar::Sections;
 use crate::util::shorten;
 use crate::{SiteData, metadata::Metadata};
 use base64::Engine;
-use base64::prelude::BASE64_STANDARD_NO_PAD;
+use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use hauchiwa::Context;
 use hauchiwa::RuntimeError;
 use maud::{Markup, PreEscaped, html};
@@ -33,7 +33,16 @@ pub fn news_posts(
                     "公式ポスト"
                 }
                 @for post_meta in &site_map.official_posts {
-                    (post_card(sack, post_meta, name_map)?)
+                    (post_card(post_meta, name_map)?)
+                }
+            }
+
+            .listcontainer {
+                h3 {
+                    "メンバーポスト"
+                }
+                @for post_meta in &site_map.posts {
+                    (post_card(post_meta, name_map)?)
                 }
             }
         }
@@ -42,7 +51,7 @@ pub fn news_posts(
     let metadata = Metadata {
         page_title: "ニュース".to_string(),
         page_image: None,
-        canonical_link: lnk(sack, "/news.html"),
+        canonical_link: lnk("/news.html"),
         section: Sections::News,
         description: Some("東京大学ボカロP同好会のニュース".to_string()),
         author: None,
@@ -53,12 +62,11 @@ pub fn news_posts(
 }
 
 pub fn post_card(
-    sack: &Context<SiteData>,
     post_meta: &PostMeta,
     name_map: &HashMap<String, String>,
 ) -> Result<Markup, RuntimeError> {
     let image = match &post_meta.header_image {
-        None => "/images/gray.jpg".to_string(),
+        None => "images/gray.jpg".to_string(),
         Some(i) => i.clone(),
     };
 
@@ -73,7 +81,7 @@ pub fn post_card(
             }
             .item-title {
                 h3 {
-                    a href=(lnk(sack, format!("/news/{}.html", post_reference(post_meta)))) {
+                    a href=(lnk(format!("/news/{}.html", post_reference(post_meta)))) {
                         (post_meta.title)
                     }
                 }
@@ -120,7 +128,7 @@ pub fn post_detail(
                         "⭐: 東大ボカロP同好会の公式ポスト"
                     }
                 }
-                a href=(lnk(sack, format!("/members/{}.html", post_meta.author))) { p { (author_name) } }
+                a href=(lnk(format!("/members/{}.html", post_meta.author))) { p { (author_name) } }
                 .member-profile {
                     @if let Some(image) = &post_meta.header_image {
                         .member-profile-image {
@@ -158,9 +166,8 @@ pub fn post_detail(
 }
 
 pub fn post_reference(meta: &PostMeta) -> String {
-    let title_chars = meta.title.chars().take(10).collect::<String>();
-    let date_str = meta.date.to_string();
-    let hash_base64 = BASE64_STANDARD_NO_PAD
-        .encode(seahash::hash((date_str + &meta.title + &meta.author).as_bytes()).to_le_bytes());
-    format!("{}-{}", title_chars, hash_base64)
+    let authorhash = seahash::hash(meta.author.as_bytes()) as u128;
+    let titlehash = seahash::hash(meta.title.as_bytes()) as u128;
+    let combined = (authorhash << 64) + titlehash;
+    BASE64_URL_SAFE_NO_PAD.encode(combined.to_le_bytes())
 }

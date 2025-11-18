@@ -1,5 +1,6 @@
 use crate::templates::partials::navbar::Sections;
-use crate::{SiteData, image, lnk};
+use crate::util::image;
+use crate::{SiteData, util::lnk};
 use hauchiwa::{Context, RuntimeError};
 use maud::{Markup, html};
 use serde::{Deserialize, Serialize};
@@ -29,6 +30,7 @@ pub fn render_metadata(
         Sections::NewsPost => "article",
         Sections::Works => "website",
         Sections::WorksPost => "article",
+        Sections::AlbumPost => "album",
     };
 
     let others = match page_type {
@@ -44,7 +46,19 @@ pub fn render_metadata(
         _ => html! {},
     };
 
-    let canonical_link = lnk(sack, &metadata.canonical_link);
+    let canonical_link = lnk(&metadata.canonical_link);
+
+    let image_lnk = metadata
+        .page_image
+        .as_ref()
+        .map(|img| {
+            if img.starts_with("https://") || img.ends_with(".webp") {
+                Ok(img.clone())
+            } else {
+                image(sack, img)
+            }
+        })
+        .map_or(Ok(None), |v| v.map(Some))?;
 
     Ok(html! {
         title { (&metadata.page_title) }
@@ -53,8 +67,8 @@ pub fn render_metadata(
         meta property="og:type" content=(page_type);
         meta property="og:site_name" content="東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club"; // production -> producer - ありがとーnekojitalter
         meta property="og:locale" content="ja_JP";
-        @if let Some(img) = &metadata.page_image {
-            meta property="og:image" content=(image(sack, img)?);
+        @if let Some(img) = &image_lnk {
+            meta property="og:image" content=(img);
         }
         @if let Some(desc) = &metadata.description {
             meta property="og:description" content=(desc);

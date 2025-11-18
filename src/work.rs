@@ -9,7 +9,7 @@ pub enum CoverOrImage {
     AudioFile(String),
 }
 
-#[derive(Clone, Debug, PartialOrd, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialOrd, PartialEq, Serialize, Deserialize)]
 pub struct WorkMeta {
     pub title: String,
     pub author: String,
@@ -69,8 +69,6 @@ pub struct DisplayWorkMeta {
     pub description: Option<String>,
     pub on_site_link: String,
     pub author_displayname: String,
-    pub collaborators: Vec<String>,
-    pub remix_original_work: Option<String>,
     pub author_link: String,
     pub embed_html: String,
 }

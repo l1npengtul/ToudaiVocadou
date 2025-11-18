@@ -1,3 +1,4 @@
+use crate::SiteData;
 use crate::member::MemberMeta;
 use crate::metadata::Metadata;
 use crate::sitemap::SiteMap;
@@ -5,9 +6,9 @@ use crate::templates::base::base;
 use crate::templates::functions::embed::embed;
 use crate::templates::functions::sns::sns_icon;
 use crate::templates::partials::navbar::Sections;
-use crate::templates::works::{thumbnail, work_reference};
+use crate::templates::works::{thumbnail_link, work_reference};
+use crate::util::image;
 use crate::work::WorkMeta;
-use crate::{SiteData, image};
 use hauchiwa::Context;
 use hauchiwa::RuntimeError;
 use maud::{Markup, PreEscaped, html};
@@ -87,7 +88,7 @@ pub fn member_card(sack: &Context<SiteData>, member: &MemberMeta) -> Result<Mark
             a .member-link href=(format!("/members/{}.html", member.ascii_name)) {
                 .member-card {
                     .member-image .img-placeholder {
-                        img .member-image .img-placeholder src=(image(sack, format!("/icon/{}.jpg", member.ascii_name))?) alt=(member.name); // FIXME
+                        img .member-image .img-placeholder src=(image(sack, format!("images/icon/{}.jpg", member.ascii_name))?) alt=(member.name); // FIXME
                     }
                     .member-info #(member.ascii_name) {
                         h3 { (member.name) }
@@ -104,7 +105,7 @@ pub fn member_card(sack: &Context<SiteData>, member: &MemberMeta) -> Result<Mark
                                 .sns-icon-size {}
                             }
                             @for link in &member.links {
-                                (sns_icon(sack, link)?)
+                                (sns_icon(link)?)
                             }
                         }
                     }
@@ -114,23 +115,24 @@ pub fn member_card(sack: &Context<SiteData>, member: &MemberMeta) -> Result<Mark
     })
 }
 
+// TODO: add "worked on albums" and "posts".
 pub fn member_detail(
     sack: &Context<SiteData>,
     member: &MemberMeta,
-    featured_works: &Vec<&WorkMeta>,
+    featured_works: &[WorkMeta],
     content: &str,
 ) -> Result<Markup, RuntimeError> {
     let this_featured_work = featured_works
         .iter()
         .filter(|featured| featured.author == member.ascii_name)
-        .collect::<Vec<&&WorkMeta>>();
+        .collect::<Vec<&WorkMeta>>();
 
     let inner = html! {
         section #member-detail {
             .member-detail-container {
                 .member-profile {
                     .member-profile-image {
-                        img .img-placeholder src=(image(sack, format!("/icon/{}.jpg", member.ascii_name))?) alt=(member.name);
+                        img .img-placeholder src=(image(sack, format!("images/icon/{}.jpg", member.ascii_name))?) alt=(member.name);
                     }
                     .member-profile-info {
                         h2 { (member.name) }
@@ -142,7 +144,7 @@ pub fn member_detail(
                         }
                         .member-links {
                             @for link in &member.links {
-                                (sns_icon(sack, link)?)
+                                (sns_icon(link)?)
                             }
                         }
                     }
@@ -173,7 +175,7 @@ pub fn member_detail(
         }
     };
 
-    let metadata = MemberMeta::to_metadata(sack, member.clone());
+    let metadata = MemberMeta::to_metadata(member.clone());
 
     base(sack, &metadata, None, inner)
 }
@@ -188,7 +190,7 @@ pub fn featured_work_item_detail(
         .work-item-detail id=(work_ref) {
             h4 { (item.title) }
             .work-youtube-container {
-                (thumbnail(sack, item)?)
+                (thumbnail_link(sack, item)?)
             }
 
             .work-description {

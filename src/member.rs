@@ -1,7 +1,5 @@
 use crate::metadata::Metadata;
 use crate::templates::partials::navbar::Sections;
-use crate::{SiteData, lnk};
-use hauchiwa::Context;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -19,7 +17,7 @@ pub struct MemberMeta {
 }
 
 impl MemberMeta {
-    pub fn to_metadata(sack: &Context<SiteData>, value: MemberMeta) -> Metadata {
+    pub fn to_metadata(value: MemberMeta) -> Metadata {
         let page_title = if value.name == value.ascii_name {
             value.name.clone()
         } else {
@@ -28,7 +26,7 @@ impl MemberMeta {
 
         Metadata {
             page_title: format!("{page_title} - 東京大学ボカロP同好会"),
-            page_image: Some(lnk(sack, format!("icon/{}.jpg", value.ascii_name))),
+            page_image: Some(format!("images/icon/{}.jpg", value.ascii_name)),
             canonical_link: format!("members/{}.html", value.ascii_name),
             section: Sections::MemberProfile,
             description: Some(value.short),
