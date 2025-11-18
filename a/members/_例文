@@ -1,0 +1,28 @@
+name = "例文" # 活動名
+ascii_name = "Reibun" # 英語字で活動名
+
+# 自分のアイコン・写真はascii_nameで選びます。　写真を"public/icon"(e.g. public/icon/Reibun.jpg).
+
+short = "RIP 🇧.🇺.🇳.🇵 2025-2025" # 狭い自分紹介
+
+links = [ "https://twitter.com/toudaivocadou", "https://example.com" ] #SNS　リンク
+
+
+=== 
+
+こちらに自己紹介を入力
+
+**ディスコードみたいマークダウンフォーマットできます**
+
+ツイータなどsnsのポストを入れたければ
+{{ sns_embed("https://x.com/あなたのユーザーネーム/ポストID") }}
+を使ってください ("https://x.com/あなたのユーザーネーム/ポストID")を変更するべき
+
+追加の写真は
+[写真説明](circle-photo.jpg)
+
+マークダウン使用ガイド: https://qiita.com/masterpiecehack/items/990683b706b70b88b4c7
+
+
+
+

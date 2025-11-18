@@ -1,7 +1,10 @@
-use crate::die_linky::SocialLinkType;
+use crate::{die_linky::SocialLinkType, lnk};
+use hauchiwa::RuntimeError;
 use maud::{Markup, html};
+use minijinja::Error as JinjaError;
+use minijinja::ErrorKind;
 
-pub fn sns_icon(link: &str) -> Markup {
+pub fn sns_icon(link: &str) -> Result<Markup, RuntimeError> {
     let temp = link.parse::<SocialLinkType>().unwrap();
     let sns_url_icon = temp.to_svg_icon();
     let special_style = match temp {
@@ -9,13 +12,15 @@ pub fn sns_icon(link: &str) -> Markup {
         SocialLinkType::Bluesky => "width: 100%;",
         _ => "",
     };
-    html! {
+    Ok(html! {
         a .social-icon .sns-icon-size href=(link) {
-            img alt=(link) src=(format!("/icon/social_icons/{}", sns_url_icon)) style=(special_style);
+            img alt=(link) src=(lnk(format!("assets/social_icons/{}", sns_url_icon))) style=(special_style);
         }
-    }
+    })
 }
 
-pub fn jinja_sns_icon(link: &str) -> String {
-    sns_icon(link).into_string()
+pub fn jinja_sns_icon(link: &str) -> Result<String, JinjaError> {
+    Ok(sns_icon(link)
+        .map_err(|why| JinjaError::new(ErrorKind::InvalidOperation, why.to_string()))?
+        .into_string())
 }

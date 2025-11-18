@@ -5,16 +5,6 @@ short = "楽譜から作成するボカロP"
 
 links = [ "https://www.youtube.com/@Henkyokuten", "https://www.nicovideo.jp/user/86592916", "https://x.com/henkyokuten9973" ]
 
-[[featured_works]]
-title="深海"
-description="初音ミクオリジナル曲です。海の中をイメージして曲を作りました。"
-link="https://www.youtube.com/watch?v=etUgny3nVrI"
-
-[[featured_works]]
-title="神の嗜好品"
-description="鏡音リンオリジナル曲です。シンセサイザーの電子音などを使って曲を作りました。"
-link="https://www.youtube.com/watch?v=tEVnFeV-vwo"
-
 ===
 はじめまして、変曲点と申します。2024年の8月にオリジナルボカロ曲を初投稿し、11月に東大ボカロP同好会に入会しました。楽器などを習ったり、演奏したりしたことはありません。音楽活動は作曲だけをしています。
 

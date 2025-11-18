@@ -1,16 +1,18 @@
 use crate::metadata::Metadata;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
-use crate::{Data, image};
-use hauchiwa::Sack;
+use crate::util::image;
+use crate::{SiteData, lnk};
+use hauchiwa::Context;
+use hauchiwa::RuntimeError;
 use maud::{Markup, html};
 
-pub fn index(sack: &Sack<Data>) -> Markup {
+pub fn index(context: &Context<SiteData>) -> Result<Markup, RuntimeError> {
     let meta = Metadata {
         page_title: "東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club"
             .to_string(),
-        page_image: Some(image(sack, "/images/circle-photo.jpg")),
-        canonical_link: "index.html".to_string(),
+        page_image: Some("images/circle-photo.jpg".to_string()),
+        canonical_link: lnk("index.html"),
         section: Sections::Home,
         description: Some(
             "東京大学ボカロP同好会は、ボーカロイド楽曲の制作を通じて交流するサークルです。"
@@ -39,7 +41,7 @@ pub fn index(sack: &Sack<Data>) -> Markup {
                     p { "まだ設立したばかりのこのサークルで、一緒に音楽を楽しみながら成長しませんか？（サークル代表　三森）"}
                 }
                 .about-image {
-                    img .img-placeholder src="images/circle-photo.jpg" alt="サークル活動の様子" style="height: auto";
+                    img .img-placeholder src=(image(context, "images/circle-photo.jpg")?) alt="サークル活動の様子" style="height: auto";
                 }
             }
         }
@@ -98,28 +100,6 @@ pub fn index(sack: &Sack<Data>) -> Markup {
             }
         }
 
-        section #join {
-            .container {
-                h2 { "入会案内" }
-                .join-info {
-                    p { "東京大学の学生であれば、学部・学年を問わず入会できます。音楽制作の経験がなくても大歓迎です！" }
-                    p { "入会を希望される方は、下記のXアカウントまでご連絡ください。" }
-                    p .contact-email {
-                        a href="https://twitter.com/toudaivocadou/" {
-                            "@toudaivocadou"
-                        }
-                    }
-                    p { "または、新歓期間中の説明会にお越しください。" }
-                    .join-details {
-                        h3 { "説明会情報" }
-                        p { "日時: 4月12日 18:00〜18:30" }
-                        p { "説明会の参加方法に関しましては、公式Xアカウントで随時お知らせいたします。" }
-                        p { "また、日時に関しても変更される場合がありますので、公式Xアカウントからの情報を随時ご確認ください。" }
-                    }
-                }
-            }
-        }
-
         // section #news {
         //     .container {
         //         h2 { "最新ニュース" }
@@ -131,7 +111,7 @@ pub fn index(sack: &Sack<Data>) -> Markup {
 
     };
 
-    base(sack, &meta, content)
+    base(context, &meta, Some(&["script.js"]), content)
 }
 
 fn activity(title: &str, timeframe: &str, description: &str) -> Markup {

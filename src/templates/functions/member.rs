@@ -1,8 +1,9 @@
+use crate::lnk;
 use maud::{Markup, html};
 
 pub fn member(to_link: &str) -> Markup {
     html! {
-        a href=(format!("members/{to_link}"))  {
+        a href=(lnk(format!("members/{to_link}")))  {
             (to_link)
         }
     }

@@ -1,98 +1,102 @@
-use crate::die_linky::SocialLinkType;
+use crate::{die_linky::SocialLinkType, util::lnk_s3};
+use anyhow::Error;
 use maud::{Render, html};
+use minijinja::{Error as JinjaError, ErrorKind};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use url::Url;
 use urlencoding::encode;
 
-pub fn embed(link: &str) -> impl Render {
+pub fn embed(link: &str) -> Result<impl Render, Error> {
+    println!("processing: {}", link);
+
+    if link.ends_with(".png")
+        || link.ends_with(".jpeg")
+        || link.ends_with(".jpg")
+        || link.ends_with(".gif")
+    {
+        return Ok(html! {
+            img href=(lnk_s3(link)) {}
+        });
+    }
+
     if link.ends_with(".mp3") || link.ends_with(".ogg") || link.ends_with(".wav") {
-        return html! {
+        return Ok(html! {
             figure {
-                audio controls src=(link);
-                a href=(link) {
+                audio controls src=(lnk_s3(link));
+                a href=(lnk_s3(link)) {
                     "ファイルをダウンロードする"
                 }
             }
-        };
+        });
     }
 
     let url_type = SocialLinkType::from_str(link).unwrap();
     let url_parse = Url::parse(link).unwrap();
 
-    println!("processing: {}", link);
     println!("link type: {:?}", url_type);
 
     match url_type {
-        SocialLinkType::Twitter | SocialLinkType::Xitter => {
-            html! {
-                blockquote .twitter-tweet {
-                    script async src="https://platform.twitter.com/widgets.js" charset="utf-8";
-                    a href=(link);
-                }
+        SocialLinkType::Twitter | SocialLinkType::Xitter => Ok(html! {
+            blockquote .twitter-tweet {
+                script async src="https://platform.twitter.com/widgets.js" charset="utf-8";
+                a href=(link);
             }
-        }
+        }),
         SocialLinkType::Bluesky => {
             let link_encoded = encode(link);
             let bluesky_oembed = reqwest::blocking::get(format!(
                 "https://embed.bsky.app/oembed?url={}",
                 link_encoded
-            ))
-            .unwrap();
+            ))?;
 
             if bluesky_oembed.status() != StatusCode::OK {
-                panic!("failed to get bluesky oembed - try building again or fixing this url!")
+                return Err(Error::msg("failed to get bluesky embed"));
             }
 
-            let embed_html = bluesky_oembed.json::<OEmbed>().unwrap();
+            let embed_html = bluesky_oembed.json::<OEmbed>()?;
 
             if let Some(html) = embed_html.html {
-                return html! { (html) };
+                return Ok(html! { (html) });
             } else if let Some(image) = embed_html.url {
-                return html! {
+                return Ok(html! {
                     a href=(link) {
                         img src=(image) alt=(link);
                     }
-                };
+                });
             }
 
-            panic!("returned oembed did not match any known items.")
+            Err(Error::msg("returned oembed did not match any known items."))
         }
         SocialLinkType::Youtube => {
             let youtube_video_id = url_parse
                 .query_pairs()
                 .find(|(key, _)| key == "v")
-                .unwrap()
+                .ok_or(Error::msg("invalid youtube link"))?
                 .1;
             let embed_link = format!("https://www.youtube.com/embed/{youtube_video_id}");
 
-            html! {
+            Ok(html! {
                 .youtube-embed-container {
                     iframe src=(embed_link) title="Youtube Video Player" height="360" width="640" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="width: 100%;"{}
                 }
-            }
+            })
         }
         SocialLinkType::NicoDouga => {
             let nnd_video_id = url_parse
                 .path_segments()
-                .unwrap()
+                .ok_or(Error::msg("invalid nnd link"))?
                 .find(|segment| segment.starts_with("sm"))
-                .unwrap();
+                .ok_or(Error::msg("no id in nnd link"))?;
             let nnd_video_link = format!("https://embed.nicovideo.jp/watch/{nnd_video_id}");
-            html! {
+            Ok(html! {
                 .youtube-embed-container {
-                    // script type="application/javascript" src=(nnd_video_link) {}
-                    // noscript {
-                    //     a href=(link) {
-                    //         (link)
-                    //     }
-                    // }
                     iframe src=(nnd_video_link) title="Nicovideo Video Player" height="360" width="640" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen {}
                 }
-            }
+            })
         }
-        _ => panic!("unsupported embed type."),
+        _ => Err(Error::msg("unsupported embed type")),
     }
 
     // soundcloud embed
@@ -117,6 +121,9 @@ pub struct OEmbed {
     pub html: Option<String>,
 }
 
-pub fn jinja_embed(link: &str) -> String {
-    embed(link).render().into_string()
+pub fn jinja_embed(link: &str) -> Result<String, JinjaError> {
+    Ok(embed(link)
+        .map_err(|why| JinjaError::new(ErrorKind::InvalidOperation, why.to_string()))?
+        .render()
+        .into_string())
 }

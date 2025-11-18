@@ -1,11 +1,11 @@
-use crate::Data;
-use crate::metadata::Metadata;
+use crate::lnk;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
-use hauchiwa::Sack;
+use crate::{SiteData, metadata::Metadata};
+use hauchiwa::{Context, RuntimeError};
 use maud::{Markup, html};
 
-pub fn notfound(sack: &Sack<Data>) -> Markup {
+pub fn notfound(sack: &Context<SiteData>) -> Result<Markup, RuntimeError> {
     let inner = html! {
         section #hero {
             h2 { "このページは見つかりませんでした。" }
@@ -23,12 +23,12 @@ pub fn notfound(sack: &Sack<Data>) -> Markup {
     let meta = Metadata {
         page_title: "404 - このページを見つかりませんでした。".to_string(),
         page_image: None,
-        canonical_link: "/404.html".to_string(),
+        canonical_link: lnk("404.html"),
         section: Sections::Home,
         description: None,
         author: None,
         date: None,
     };
 
-    base(sack, &meta, inner)
+    base(sack, &meta, Some(&[]), inner)
 }

@@ -1,0 +1,28 @@
+# すべてのmdファイルの === 前は
+# TOMLファイルです。
+# ガイド: https://toml.io/ja/v1.0.0
+
+title = "アモングアス" # 作品の題目
+author = "Reibun" # 作家　(英語字幕）
+date = 2025-02-02 #　作った年月日　(ISO-8601)
+short = "面白い作品" # 狭い説明
+link = "https://www.youtube.com/watch?v=dQw4w9WgXcQ" # 作品のリンク (youtube OR nicovideo)
+collaborators = [ "Mitsumori" ] #　この作品がコラボ作品の場合、追加ネームが入れられます
+cover_image = "circle-photo.jpg" # カバーイメージがあるの場合 (写真ファイルは"public/images"に入れてください)
+featured = true #　この作品をメンバーページにフィーチャー希望の場合、`true`で設定してください。希望しないの方は`false`
+#remix_original_work = "" # リミックスの場合、こちらにオリジナル曲のリンクを入れてください。
+===
+
+こちらに作品の説明を入力
+
+**ディスコードみたいマークダウンフォーマットできます**
+
+ツイータなどsnsのポストを入れたければ
+{{ sns_embed("https://x.com/あなたのユーザーネーム/ポストID") }}
+を使ってください ("https://x.com/あなたのユーザーネーム/ポストID")を変更するべき
+
+追加の写真は
+[写真説明](circle-photo.jpg)
+
+マークダウン使用ガイド: https://qiita.com/masterpiecehack/items/990683b706b70b88b4c7
+

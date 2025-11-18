@@ -1,6 +1,7 @@
 use crate::templates::partials::navbar::Sections;
-use crate::{Data, RENDER_SITE, image};
-use hauchiwa::Sack;
+use crate::util::image;
+use crate::{SiteData, util::lnk};
+use hauchiwa::{Context, RuntimeError};
 use maud::{Markup, html};
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +16,10 @@ pub struct Metadata {
     pub date: Option<String>,
 }
 
-pub fn render_metadata(sack: &Sack<Data>, metadata: &Metadata) -> Markup {
+pub fn render_metadata(
+    sack: &Context<SiteData>,
+    metadata: &Metadata,
+) -> Result<Markup, RuntimeError> {
     let page_type = match metadata.section {
         Sections::Home => "website",
         Sections::Members => "website",
@@ -26,6 +30,7 @@ pub fn render_metadata(sack: &Sack<Data>, metadata: &Metadata) -> Markup {
         Sections::NewsPost => "article",
         Sections::Works => "website",
         Sections::WorksPost => "article",
+        Sections::AlbumPost => "album",
     };
 
     let others = match page_type {
@@ -41,25 +46,33 @@ pub fn render_metadata(sack: &Sack<Data>, metadata: &Metadata) -> Markup {
         _ => html! {},
     };
 
-    let canonical_link = if metadata.canonical_link.starts_with("/") {
-        format!("{}{}", RENDER_SITE, &metadata.canonical_link)
-    } else {
-        format!("{}/{}", RENDER_SITE, &metadata.canonical_link)
-    };
+    let canonical_link = lnk(&metadata.canonical_link);
 
-    html! {
+    let image_lnk = metadata
+        .page_image
+        .as_ref()
+        .map(|img| {
+            if img.starts_with("https://") || img.ends_with(".webp") {
+                Ok(img.clone())
+            } else {
+                image(sack, img)
+            }
+        })
+        .map_or(Ok(None), |v| v.map(Some))?;
+
+    Ok(html! {
         title { (&metadata.page_title) }
         meta property="og:title" content=(&metadata.page_title);
         meta property="og:url" content=(canonical_link);
         meta property="og:type" content=(page_type);
         meta property="og:site_name" content="東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club"; // production -> producer - ありがとーnekojitalter
         meta property="og:locale" content="ja_JP";
-        @if let Some(img) = &metadata.page_image {
-            meta property="og:image" content=(image(sack, img));
+        @if let Some(img) = &image_lnk {
+            meta property="og:image" content=(img);
         }
         @if let Some(desc) = &metadata.description {
             meta property="og:description" content=(desc);
         }
         (others)
-    }
+    })
 }
