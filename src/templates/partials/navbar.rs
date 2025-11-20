@@ -37,7 +37,7 @@ pub fn navbar(current_section: Sections) -> Markup {
                         (navbar_item("/index.html", current_section == Sections::Home, "ホーム"))
                         (navbar_item("/members.html", current_section == Sections::Members || current_section == Sections::MemberProfile, "メンバー紹介"))
                         (navbar_item("/index.html#activities", current_section == Sections::Activities, "活動内容"))
-                        (navbar_item("/index.html#join", current_section == Sections::Join, "入会案内"))
+                        (navbar_item("/join.html", current_section == Sections::Join, "入会案内"))
                         (navbar_item("/news.html", current_section == Sections::News || current_section == Sections::NewsPost, "ニュース・ブログ"))
                         (navbar_item("/works.html", current_section == Sections::Works || current_section == Sections::WorksPost, "リリース"))
                     }

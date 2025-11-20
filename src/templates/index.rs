@@ -1,8 +1,8 @@
+use crate::SiteData;
 use crate::metadata::Metadata;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
 use crate::util::image;
-use crate::{SiteData, lnk};
 use hauchiwa::Context;
 use hauchiwa::RuntimeError;
 use maud::{Markup, html};
@@ -12,7 +12,7 @@ pub fn index(context: &Context<SiteData>) -> Result<Markup, RuntimeError> {
         page_title: "東京大学ボカロP同好会 - University of Tokyo Vocaloid Producer Club"
             .to_string(),
         page_image: Some("images/circle-photo.jpg".to_string()),
-        canonical_link: lnk("index.html"),
+        canonical_link: "/index.html".to_string(),
         section: Sections::Home,
         description: Some(
             "東京大学ボカロP同好会は、ボーカロイド楽曲の制作を通じて交流するサークルです。"
@@ -27,7 +27,7 @@ pub fn index(context: &Context<SiteData>) -> Result<Markup, RuntimeError> {
             .container {
                 h2 { "ボカロ、作ろう。" }
                 p { "ボーカロイド楽曲の制作を通じて交流するサークルです。" }
-                a href="#join" .btn { "入会案内" }
+                a href="/join.html" .btn { "入会案内" }
             }
         }
 
@@ -67,6 +67,7 @@ pub fn index(context: &Context<SiteData>) -> Result<Markup, RuntimeError> {
                     .youtube-embed-container #embed {
                         ""
                     }
+
                     .featured-work-info {
                         a href="" #featured-work-link {
                             h3 #featured-work-title {
@@ -82,20 +83,22 @@ pub fn index(context: &Context<SiteData>) -> Result<Markup, RuntimeError> {
                         p #featured-work-description {
                             ""
                         }
-                        .back-button{
-                            a href="/works.html" {
-                                "全曲一覧になる"
+                        div style="margin-top: auto;" {
+                            .click-button{
+                                a href="/works.html" {
+                                p {
+                                    "全曲一覧になる"
+                                }
                             }
                         }
 
-                        .back-button{
+                        .click-button{
                             p #reload {
                                 "曲をリロード"
                             }
                         }
+                        }
                     }
-
-
                 }
             }
         }

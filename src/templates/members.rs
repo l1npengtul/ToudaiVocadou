@@ -1,10 +1,12 @@
 use crate::SiteData;
 use crate::member::MemberMeta;
 use crate::metadata::Metadata;
+use crate::post::PostMeta;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
 use crate::templates::functions::embed::embed;
 use crate::templates::functions::sns::sns_icon;
+use crate::templates::news::{post_reference, post_thumbnail};
 use crate::templates::partials::navbar::Sections;
 use crate::templates::works::{thumbnail_link, work_reference};
 use crate::util::image;
@@ -71,7 +73,7 @@ pub fn members(sack: &Context<SiteData>, site_map: &SiteMap) -> Result<Markup, R
     let metadata = Metadata {
         page_title: "メンバー紹介 - 東京大学ボカロP同好会".to_string(),
         page_image: None,
-        canonical_link: "members.html".to_string(),
+        canonical_link: "/members.html".to_string(),
         section: Sections::Members,
         description: Some("東京大学ボカロP同好会のメンバー紹介".to_string()),
         author: None,
@@ -88,7 +90,7 @@ pub fn member_card(sack: &Context<SiteData>, member: &MemberMeta) -> Result<Mark
             a .member-link href=(format!("/members/{}.html", member.ascii_name)) {
                 .member-card {
                     .member-image .img-placeholder {
-                        img .member-image .img-placeholder src=(image(sack, format!("images/icon/{}.jpg", member.ascii_name))?) alt=(member.name); // FIXME
+                        img .member-image .img-placeholder src=(image(sack, format!("images/icon/{}.jpg", member.ascii_name))?) alt=(member.name);
                     }
                     .member-info #(member.ascii_name) {
                         h3 { (member.name) }
@@ -102,10 +104,10 @@ pub fn member_card(sack: &Context<SiteData>, member: &MemberMeta) -> Result<Mark
                         .member-links {
                             // dummy div to fill out the size in case the user has no icons
                             @if member_links_len == 0 {
-                                .sns-icon-size {}
+                                .social-icon-size style="visibility: hidden" {}
                             }
                             @for link in &member.links {
-                                (sns_icon(link)?)
+                                (sns_icon(sack, link)?)
                             }
                         }
                     }
@@ -119,13 +121,22 @@ pub fn member_card(sack: &Context<SiteData>, member: &MemberMeta) -> Result<Mark
 pub fn member_detail(
     sack: &Context<SiteData>,
     member: &MemberMeta,
-    featured_works: &[WorkMeta],
+    site_map: &SiteMap,
     content: &str,
 ) -> Result<Markup, RuntimeError> {
-    let this_featured_work = featured_works
+    let this_featured_work = site_map
+        .featured_works
         .iter()
         .filter(|featured| featured.author == member.ascii_name)
         .collect::<Vec<&WorkMeta>>();
+
+    let mut featured_posts = site_map
+        .posts
+        .iter()
+        .filter(|post| post.author == member.ascii_name)
+        .collect::<Vec<&PostMeta>>();
+
+    featured_posts.sort_by(|post_a, post_b| post_a.date.cmp(&post_b.date));
 
     let inner = html! {
         section #member-detail {
@@ -144,32 +155,50 @@ pub fn member_detail(
                         }
                         .member-links {
                             @for link in &member.links {
-                                (sns_icon(link)?)
+                                (sns_icon(sack, link)?)
                             }
                         }
                     }
                 }
             }
 
-            .member-featured-works {
-                h3 { "代表作品" }
-                .container {
-                    @for featured in &this_featured_work {
-                        (featured_work_item_detail(sack, featured)?)
+            .member-works-container {
+                .member-featured-works {
+                    h3 { "代表作品" }
+                    .container {
+                        @for featured in &this_featured_work {
+                            (featured_work_item_detail(sack, featured)?)
+                        }
+                        @if this_featured_work.is_empty() {
+                            p .work-description style="text-align: center;" {
+                                em {
+                                    "代表作品がありません。"
+                                }
+                            }
+                        }
                     }
                 }
-            }
 
-            .member-featured-works {
-                h3 { "最近のポスト" }
-                .container {
-
+                .member-featured-works {
+                    h3 { "最近のポスト" }
+                    .container {
+                        @for featured in featured_posts.iter().take(5) {
+                            (featured_post_detail(sack, featured)?)
+                        }
+                        @if featured_posts.is_empty() {
+                            p .work-description style="text-align: center;" {
+                                em {
+                                    "代表作品がありません。"
+                                }
+                            }
+                        }
+                    }
                 }
-            }
 
-            .back-button{
-                a href="../members.html" {
-                    "メンバー一覧に戻る"
+                .back-button{
+                    a href="../members.html" class="margin-top: 50px;" {
+                        "メンバー一覧に戻る"
+                    }
                 }
             }
         }
@@ -190,22 +219,36 @@ pub fn featured_work_item_detail(
         .work-item-detail id=(work_ref) {
             h4 { (item.title) }
             .work-youtube-container {
-                (thumbnail_link(sack, item)?)
+                img .work-item-thumb src=(thumbnail_link(sack, item)?) alt=(item.title) {}
             }
 
             .work-description {
-                @if let Some(desc) = &item.short {
-                    p { (desc) }
-                }
-                @else {
-                    p {}
-                }
+                p { (item.short.as_deref().unwrap_or_default()) }
             }
 
             .back-button{
                 a href=(format!("/works/releases/{}.html", work_ref)) {
                     "詳しく見る"
                 }
+            }
+        }
+    })
+}
+
+pub fn featured_post_detail(
+    sack: &Context<SiteData>,
+    item: &PostMeta,
+) -> Result<Markup, RuntimeError> {
+    let post_ref = post_reference(item);
+
+    Ok(html! {
+        .post-item-detail id=(post_ref) {
+            .post-picture-container {
+                img .post-thumb src=(post_thumbnail(sack, item)?);
+            }
+            .post-details {
+                h4 { (item.title) }
+                p { (item.short) }
             }
         }
     })

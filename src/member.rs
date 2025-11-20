@@ -27,7 +27,7 @@ impl MemberMeta {
         Metadata {
             page_title: format!("{page_title} - 東京大学ボカロP同好会"),
             page_image: Some(format!("images/icon/{}.jpg", value.ascii_name)),
-            canonical_link: format!("members/{}.html", value.ascii_name),
+            canonical_link: format!("/members/{}.html", value.ascii_name),
             section: Sections::MemberProfile,
             description: Some(value.short),
             author: Some(value.name),

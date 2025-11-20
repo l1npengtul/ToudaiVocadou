@@ -3,6 +3,7 @@ use std::io::Read;
 use std::str::FromStr;
 
 use crate::FRONT_MATTER_SPLIT;
+use crate::post::{PostMeta, RawPostMeta};
 use crate::work::{CoverOrImage, RawWorkMeta, WorkMeta};
 use hauchiwa::Page;
 use hauchiwa::RuntimeError;
@@ -26,6 +27,28 @@ where
     let toml_parsed = toml::from_str::<Metadata>(front_matter)?;
 
     Ok((toml_parsed, content.to_string()))
+}
+
+pub fn parse_post_meta(file: &str) -> Result<(PostMeta, String), anyhow::Error> {
+    let (raw_post, content) = parse_front_matter_and_fetch_contents::<RawPostMeta>(file)?;
+
+    let new_short = match raw_post.short {
+        Some(shrt) => shrt,
+        None => format!("{}...", content.chars().take(50).collect::<String>()),
+    };
+
+    Ok((
+        PostMeta {
+            title: raw_post.title,
+            author: raw_post.author,
+            header_image: raw_post.header_image,
+            date: raw_post.date,
+            short: new_short,
+            official: raw_post.official,
+            social_links: raw_post.social_links,
+        },
+        content,
+    ))
 }
 
 pub fn parse_work_meta(file: &str) -> Result<(WorkMeta, String), anyhow::Error> {

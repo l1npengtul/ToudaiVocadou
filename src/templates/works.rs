@@ -1,7 +1,6 @@
 use crate::SiteData;
 use crate::album::AlbumMeta;
 use crate::die_linky::SocialLinkType;
-use crate::lnk;
 use crate::metadata::Metadata;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
@@ -32,33 +31,50 @@ pub fn works(
             }
         }
 
-        section .filters {
-            a .filter-link href="#songs" {
-                "リリース"
-            }
-            a .filter-link href="#albums" {
-                "アルバム"
+        section #filters {
+            .container .filters {
+                .click-button {
+                    a .filter-link href="#songs" {
+                        p { "リリース" }
+                    }
+                }
+                .click-button {
+                    a .filter-link href="#albums" {
+                        p { "アルバム" }
+                    }
+                }
             }
         }
 
         section #songs .list {
-            h3 {
-                "リリース"
-            }
-            .listcontainer {
-                @for work in &site_map.works {
-                    (work_card(sack, work, name_map)?)
+            .container {
+                h2 {
+                    "リリース"
+                }
+                .listcontainer {
+                    @for work in &site_map.works {
+                        (work_card(sack, work, name_map)?)
+                    }
                 }
             }
         }
 
         section #albums .list {
-            h3 {
+            .container {
+                h2 {
                 "アルバム"
-            }
-            .listcontainer {
-                @for album in &site_map.albums {
-                    (album_card(sack, album, name_map)?)
+                }
+                .listcontainer {
+                    @for album in &site_map.albums {
+                        (album_card(sack, album, name_map)?)
+                    }
+                    @if site_map.albums.is_empty() {
+                        p .work-description style="text-align: center;" {
+                            em {
+                                "アルバムがありません。"
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -67,7 +83,7 @@ pub fn works(
     let metadata = Metadata {
         page_title: "リリース".to_string(),
         page_image: None,
-        canonical_link: "works.html".to_string(),
+        canonical_link: "/works.html".to_string(),
         section: Sections::Works,
         description: Some("東京大学ボカロP同好会のメンバーの作品展示館".to_string()),
         author: None,
@@ -85,30 +101,23 @@ pub fn work_card(
     let author_name = name_map.get(&work_meta.author).ok_or(RuntimeError::msg("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it?".to_string()))?;
 
     Ok(html! {
-        .item-card {
-            .item-type {
-                p {
-                    @if work_meta.remix_original_work.is_some() {
-                        "リミックス"
-                    } @else {
-                        "リリース曲"
-                    }
+        .work-item-detail {
+            h4 {
+                a href=(format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author))){
+                    (work_meta.title)
                 }
             }
-            .item-image {
+            .work-youtube-container {
                 img .work-item-thumb src=(thumbnail_link(sack, work_meta)?) alt=(work_meta.title) {}
             }
-            .item-title {
-                h3 {
-                    a href=(lnk(format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author)))){
-                        (work_meta.title)
-                    }
-                }
+            .work-description {
                 p .member-role {
                     (work_meta.date)
                 }
-                p .member-department {
-                    (author_name)
+                a href=(format!("/members/{}.html", work_meta.author)) {
+                    p .member-department {
+                        (author_name)
+                    }
                 }
                 p {
                     (work_meta.short.clone().unwrap_or_default())
@@ -150,7 +159,7 @@ pub fn album_card(
             .item-title {
                 h3 {
                     a href=(
-                        lnk(format!("/works/albums/{}.html", album_reference(&album_meta.title, &album_meta.front_cover)))
+                        format!("/works/albums/{}.html", album_reference(&album_meta.title, &album_meta.front_cover))
                     ) {
                         (album_meta.title)
                     }
@@ -178,7 +187,7 @@ pub fn album_detail(
     let contributors = album_meta.contributors.iter().map(|contributor| {
         let ascii_name = name_map.get(contributor).unwrap();
         html! {
-            a href=(lnk(format!("/members/{}.html", ascii_name))) {
+            a href=(format!("/members/{}.html", ascii_name)) {
                 (contributor)
             }
         }
@@ -213,13 +222,15 @@ pub fn album_detail(
                         }
                         @if has_additional_illusts {
                             .album-images {
-                                h4 {  }
-                                .work-item-detail {
-
+                                @for (header, imglnk) in &album_meta.other_covers {
+                                    h4 { (header) }
+                                    .work-item-detail {
+                                        (image(sack, imglnk)?)
+                                    }
                                 }
                             }
                         }
-                        @ if let Some(crossfade_demonstration) = &album_meta.crossfade_demonstration {
+                        @if let Some(crossfade_demonstration) = &album_meta.crossfade_demonstration {
                             (big_display_for_item(
                                 "試聴動画",
                                 None,
@@ -237,7 +248,7 @@ pub fn album_detail(
         }
 
         .back-button{
-            a href="../works.html" {
+            a href="../../works.html" {
                 "リリース集合一覧に戻る"
             }
         }
@@ -247,7 +258,7 @@ pub fn album_detail(
         page_title: album_meta.title.clone(),
         page_image: Some(album_meta.front_cover.to_string()),
         canonical_link: format!(
-            "works/albums/{}.html",
+            "/works/albums/{}.html",
             album_reference(&album_meta.title, &album_meta.front_cover)
         ),
         section: Sections::WorksPost,
@@ -280,7 +291,7 @@ pub fn work_detail(
                                 h4 { "このリリースはメンバーページでフィーチャーされています。" }
                             }
                         }
-                        a href=(lnk(format!("/members/{}.html", work_meta.author))) { p { (author_name) } }
+                        a href=(format!("/members/{}.html", work_meta.author)) { p { (author_name) } }
                         hr {}
                         @if let Some(short) = &work_meta.short {
                             p { (short) }
@@ -294,7 +305,7 @@ pub fn work_detail(
         }
 
         .back-button{
-            a href="../works.html" {
+            a href="../../works.html" {
                 "リリース集合一覧に戻る"
             }
         }

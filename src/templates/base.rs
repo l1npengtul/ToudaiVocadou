@@ -18,7 +18,7 @@ where
     let metadata = Into::into(header_metadata);
     let scripts = match scripts {
         Some(s) => s,
-        None => &["script.js"],
+        None => &[],
     };
 
     Ok(html! {
@@ -30,7 +30,7 @@ where
                 .main-content-container {
                     (inner)
                 }
-                (footer()?)
+                (footer(sack)?)
             }
         }
     })

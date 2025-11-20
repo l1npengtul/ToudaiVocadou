@@ -6,5 +6,4 @@ pub mod join;
 pub mod members;
 pub mod news;
 pub mod partials;
-pub mod state;
 pub mod works;

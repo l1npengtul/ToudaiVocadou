@@ -1,13 +1,13 @@
 use crate::album::AlbumMeta;
 use crate::member::MemberMeta;
 use crate::post::PostMeta;
-use crate::read::{parse_front_matter_and_fetch_contents, parse_work_meta, robots_txt};
+use crate::read::{parse_front_matter_and_fetch_contents, parse_post_meta, parse_work_meta, robots_txt};
 use crate::sitemap::SiteMap;
 use crate::templates::error::notfound;
 use crate::templates::functions::embed::{embed, jinja_embed};
 use crate::templates::functions::member::jinja_member;
-use crate::templates::functions::sns::jinja_sns_icon;
 use crate::templates::index::index;
+use crate::templates::join::join_vocadou;
 use crate::templates::members::{member_detail, members as member_overview};
 use crate::templates::news::{news_posts, post_detail, post_reference};
 use crate::templates::partials::navbar::Sections;
@@ -15,8 +15,7 @@ use crate::templates::works::{
     album_detail, album_reference, work_detail, work_reference, works as works_overview,
 };
 use crate::util::{
-    AudioFile, SvgData, lnk, markup_to_page, render_metadata_and_final_page, set_external_bin_url,
-    set_site_root, set_site_url, site_root,
+    AudioFile, SvgData, markup_to_page, render_metadata_and_final_page, rewrite_html, rewrite_link, rewrite_page, rewrite_settings, set_external_bin_url, set_site_root, set_site_url, site_root
 };
 use crate::work::{DisplayWorkMeta, WorkMeta};
 use clap::{Parser, ValueEnum};
@@ -74,12 +73,13 @@ enum Mode {
 #[derive(Clone, Debug)]
 pub struct SiteData {
     pub build_id: u64,
+    pub site_url: String,
 }
 
-pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
-    let site_data = SiteData { build_id };
+pub fn build_site(build_id: u64, site_url: String) -> Result<(), hauchiwa::HauchiwaError> {
+    let site_data = SiteData { build_id, site_url };
     info!("BUILD-{}: Configuring...", build_id);
-    let mut website = Website::config()
+    let mut website = Website::<SiteData>::config()
         .add_loaders([
             // load site content
             loader::glob_content(
@@ -90,7 +90,7 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
             loader::glob_content(
                 site_root(),
                 "posts/[!_]*.md",
-                parse_front_matter_and_fetch_contents::<PostMeta>,
+                parse_post_meta,
             ),
             loader::glob_content(site_root(), "works/[!_]*.md", parse_work_meta),
             loader::glob_content(
@@ -110,7 +110,6 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
             // SVG assets require special treatment, we dont want processing
             loader::glob_assets(site_root(), "assets/**/*.svg", |rt, data| {
                 let path = rt.store(&data, "svg")?;
-                info!("Adding SVG {}", &path);
                 Ok(SvgData { path, data })
             }),
             loader::glob_assets(site_root(), "audio/**/*.ogg", |rt, data| {
@@ -118,17 +117,25 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
                 Ok(AudioFile {})
             })
         ])
-        .add_task("STATIC: build robots", |_ctx| {
+        .add_task("STATIC: build robots", |ctx| {
+            info!(
+                "BUILD-{}: Starting static build",
+                ctx.get_globals().data.build_id
+            );
+            let start_time = Instant::now();
+
             let robots = robots_txt()?;
-            Ok(vec![robots])
-        })
-        .add_task("STATIC: build index", |ctx| {
-            let index = markup_to_page( "index.html", index(&ctx)?);
-            Ok(vec![index])
-        })
-        .add_task("STATIC: build 404", |ctx| {
-            let notfound = markup_to_page("404.html", notfound(&ctx)?);
-            Ok(vec![notfound])
+            let index = markup_to_page(&ctx, "index.html", index(&ctx)?)?;
+            let notfound = markup_to_page(&ctx, "404.html", notfound(&ctx)?)?;
+            let join_vocadou = markup_to_page(&ctx, "join.html", join_vocadou(&ctx)?)?;
+
+            let time_taken = start_time.elapsed();
+            info!(
+                "BUILD-{}: Finished static build in {}s",
+                ctx.get_globals().data.build_id, time_taken.as_secs_f32()
+            );
+
+            Ok(vec![robots, index, notfound, join_vocadou])
         })
         .add_task("DYNAMIC: build all dynamic content", |ctx| {
             info!(
@@ -235,10 +242,10 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
 
             let mut environment = Environment::new();
 
-            environment.add_function("sns_link", jinja_sns_icon);
+            // environment.add_function("sns_link", jinja_sns_icon);
             environment.add_function("sns_embed", jinja_embed);
             environment.add_function("member", jinja_member);
-            environment.add_global("SITE", lnk( ""));
+            // environment.add_global("SITE", );
             add_to_environment(&mut environment);
             environment.set_unknown_method_callback(unknown_method_callback);
 
@@ -246,10 +253,10 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
                 "BUILD-{}: Building member pages.",
                 ctx.get_globals().data.build_id
             );
-            let mut member_overview = vec![Page::html(lnk("/members.html"), member_overview(&ctx, &sitemap).map_err(|why| why.context("Build Member Overview /members.html"))?.into_string())];
+            let mut member_overview = vec![Page::html("members.html", member_overview(&ctx, &sitemap).map_err(|why| why.context("Build Member Overview /members.html"))?.into_string())];
             let mut member_detail = members.iter().map(|member_page| {
-                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, member_page.data, Sections::MemberProfile, &member_page.data.meta.ascii_name, format!("/members/{}.html", &member_page.data.meta.ascii_name), |ctx, meta, sitemap, _, content| {
-                    member_detail(ctx, meta, &sitemap.featured_works, content)
+                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, member_page.data, Sections::MemberProfile, &member_page.data.meta.ascii_name, format!("members/{}.html", &member_page.data.meta.ascii_name), |ctx, meta, sitemap, _, content| {
+                    member_detail(ctx, meta, sitemap, content)
                 })
             }).collect::<Result<Vec<Page>, RuntimeError>>()?;
 
@@ -263,10 +270,10 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
                 ctx.get_globals().data.build_id
             );
 
-            let mut works_overview = vec![Page::html(lnk("/works.html"), works_overview(&ctx, &sitemap, &member_ascii_to_name).map_err(|why| why.context("Build Works Overview /works.html"))?.into_string())];
+            let mut works_overview = vec![Page::html("works.html", works_overview(&ctx, &sitemap, &member_ascii_to_name).map_err(|why| why.context("Build Works Overview works.html"))?.into_string())];
 
             let mut works_detail = works.iter().map(|work_page| {
-                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, work_page.data, Sections::WorksPost, &work_page.data.meta.title, format!("/works/releases/{}.html", work_reference(&work_page.data.meta.title, &work_page.data.meta.author)), |ctx, meta, _, namemap, content| {
+                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, work_page.data, Sections::WorksPost, &work_page.data.meta.title, format!("works/releases/{}.html", work_reference(&work_page.data.meta.title, &work_page.data.meta.author)), |ctx, meta, _, namemap, content| {
                     work_detail(ctx, meta, namemap, content)
                 })
             }).collect::<Result<Vec<Page>, RuntimeError>>()?;
@@ -277,7 +284,7 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
             );
 
             let mut albums_detail = albums.iter().map(|album_page| {
-                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, album_page.data, Sections::AlbumPost, &album_page.data.meta.title, format!("/works/albums/{}.html", album_reference(&album_page.data.meta.title, &album_page.data.meta.front_cover)), |ctx, meta, _, namemap, content| {
+                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, album_page.data, Sections::AlbumPost, &album_page.data.meta.title, format!("works/albums/{}.html", album_reference(&album_page.data.meta.title, &album_page.data.meta.front_cover)), |ctx, meta, _, namemap, content| {
                     album_detail(ctx, meta, namemap, content)
                 })
             }).collect::<Result<Vec<Page>, RuntimeError>>()?;
@@ -292,10 +299,10 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
                 ctx.get_globals().data.build_id
             );
 
-            let mut post_overview = vec![Page::html(lnk("/news.html"), news_posts(&ctx, &sitemap, &member_ascii_to_name)?.into_string())];
+            let mut post_overview = vec![Page::html("news.html", news_posts(&ctx, &sitemap, &member_ascii_to_name)?.into_string())];
 
             let mut posts_detail = news.iter().map(|post_page| {
-                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, post_page.data, Sections::NewsPost, &post_page.data.meta.title, format!("/news/{}.html", post_reference(&post_page.data.meta)), |ctx, meta, _, namemap, content| {
+                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, post_page.data, Sections::NewsPost, &post_page.data.meta.title, format!("news/{}.html", post_reference(&post_page.data.meta)), |ctx, meta, _, namemap, content| {
                     post_detail(ctx, meta, content, namemap)
                 })
             }).collect::<Result<Vec<Page>, RuntimeError>>()?;
@@ -323,14 +330,16 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
                     work::CoverOrImage::Link(url) => embed(url.as_str())?.render().into_string(),
                     work::CoverOrImage::AudioFile(lnk) => embed(lnk)?.render().into_string(),
                 };
+                let fixed_html = rewrite_html(&embedded_html, rewrite_settings(&ctx.get_globals().data.site_url)).map_err(|why| anyhow::Error::msg(why.to_string()))?;
+                let site_url = &ctx.get_globals().data.site_url;
                 Ok(DisplayWorkMeta {
                     id: id as i32,
                     title: work_meta.title.clone(),
                     description: work_meta.short.clone(),
-                    on_site_link: lnk(format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author))),
+                    on_site_link: rewrite_link(site_url, format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author)))?,
                     author_displayname: display_name.clone(),
-                    author_link: lnk(format!("/members/{}.html", work_meta.author)),
-                    embed_html: embedded_html,
+                    author_link: rewrite_link(site_url, format!("/members/{}.html", work_meta.author))?,
+                    embed_html: fixed_html,
                 })
             }).collect::<Result<Vec<DisplayWorkMeta>, anyhow::Error>>().map_err(|why| {
                 RuntimeError::msg(why.to_string()).context("making works_list.json")
@@ -338,14 +347,14 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
             let works_list_serialize = serde_json::to_string(&works_list).map_err(|why| {
                 RuntimeError::msg(why.to_string()).context("serializing works_list.json")
             })?;
-            let mut work_list_json = vec![Page::text(lnk("/works_list.json"), works_list_serialize)];
+            let mut work_list_json = vec![Page::text("works_list.json", works_list_serialize)];
             info!(
                 "BUILD-{}: Finished building works_list.json",
                 ctx.get_globals().data.build_id
             );
 
             info!(
-                "BUILD-{}: Collecting pages and finalizing...",
+                "BUILD-{}: Collecting pages...",
                 ctx.get_globals().data.build_id
             );
 
@@ -360,15 +369,25 @@ pub fn build_site(build_id: u64) -> Result<(), hauchiwa::HauchiwaError> {
             all_pages.append(&mut posts_detail);
             all_pages.append(&mut work_list_json);
 
-            let finish_instant = Instant::now();
-            let time_taken = finish_instant.duration_since(start_time);
+            info!(
+                "BUILD-{}: Running final HTML rewrite.",
+                ctx.get_globals().data.build_id
+            );
+
+            let rewritten_pages = all_pages.into_iter().map(|page| {
+                
+                rewrite_page(&ctx, page)
+            }).collect::<Result<Vec<Page>, RuntimeError>>()?;
+
+            let time_taken = start_time.elapsed();
             info!(
                 "BUILD-{}: Finished build phase. {} pages, took {}s.",
                 ctx.get_globals().data.build_id, all_lengths, time_taken.as_secs_f32()
             );
 
-            Ok(all_pages)
-        }).finish();
+            Ok(rewritten_pages)
+        })
+        .finish();
     info!("BUILD-{}: Starting build...", build_id);
     website.build(site_data)
 }
@@ -385,5 +404,5 @@ fn main() {
     );
     set_site_url(args.site_url.to_string());
 
-    build_site(args.build_id).expect("Failed to build site!")
+    build_site(args.build_id, args.site_url).expect("Failed to build site!")
 }

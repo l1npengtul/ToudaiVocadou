@@ -1,6 +1,6 @@
+use crate::SiteData;
 use crate::templates::partials::navbar::Sections;
 use crate::util::image;
-use crate::{SiteData, util::lnk};
 use hauchiwa::{Context, RuntimeError};
 use maud::{Markup, html};
 use serde::{Deserialize, Serialize};
@@ -46,7 +46,7 @@ pub fn render_metadata(
         _ => html! {},
     };
 
-    let canonical_link = lnk(&metadata.canonical_link);
+    let canonical_link = &metadata.canonical_link;
 
     let image_lnk = metadata
         .page_image
