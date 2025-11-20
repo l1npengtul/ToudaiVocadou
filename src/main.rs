@@ -1,7 +1,9 @@
 use crate::album::AlbumMeta;
 use crate::member::MemberMeta;
 use crate::post::PostMeta;
-use crate::read::{parse_front_matter_and_fetch_contents, parse_post_meta, parse_work_meta, robots_txt};
+use crate::read::{
+    parse_front_matter_and_fetch_contents, parse_post_meta, parse_work_meta, robots_txt,
+};
 use crate::sitemap::SiteMap;
 use crate::templates::error::notfound;
 use crate::templates::functions::embed::{embed, jinja_embed};
@@ -15,7 +17,8 @@ use crate::templates::works::{
     album_detail, album_reference, work_detail, work_reference, works as works_overview,
 };
 use crate::util::{
-    AudioFile, SvgData, markup_to_page, render_metadata_and_final_page, rewrite_html, rewrite_link, rewrite_page, rewrite_settings, set_external_bin_url, set_site_root, set_site_url, site_root
+    AudioFile, SvgData, markup_to_page, render_metadata_and_final_page, rewrite_html, rewrite_link,
+    rewrite_page, rewrite_settings, set_external_bin_url, set_site_root, set_site_url, site_root,
 };
 use crate::work::{DisplayWorkMeta, WorkMeta};
 use clap::{Parser, ValueEnum};
@@ -375,7 +378,6 @@ pub fn build_site(build_id: u64, site_url: String) -> Result<(), hauchiwa::Hauch
             );
 
             let rewritten_pages = all_pages.into_iter().map(|page| {
-                
                 rewrite_page(&ctx, page)
             }).collect::<Result<Vec<Page>, RuntimeError>>()?;
 
