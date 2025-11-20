@@ -1,16 +1,16 @@
 use crate::{
-    SiteData, lnk,
+    SiteData,
     metadata::Metadata,
     templates::{base::base, partials::navbar::Sections},
 };
 use hauchiwa::{Context, RuntimeError};
 use maud::{Markup, html};
 
-pub fn join(sack: &Context<SiteData>) -> Result<Markup, RuntimeError> {
+pub fn join_vocadou(sack: &Context<SiteData>) -> Result<Markup, RuntimeError> {
     let meta = Metadata {
         page_title: "入会希望者へ - Joining Vocaloid Producer Club".to_string(),
         page_image: Some("images/circle-photo.jpg".to_string()),
-        canonical_link: lnk("/join.html"),
+        canonical_link: "/join.html".to_string(),
         section: Sections::Join,
         author: None,
         date: None,
@@ -25,6 +25,16 @@ pub fn join(sack: &Context<SiteData>) -> Result<Markup, RuntimeError> {
                 a href="#join" .btn { "入会案内" }
             }
         }
+
+
+            section .flex-container {
+                h2 { "メンバー作品" }
+                #infinite-slider .carousel {
+                    #visible-slider-group .group {}
+                    #hidden-slider-group aria-hidden .group {}
+                }
+            }
+
 
         section #join {
             .container {
@@ -48,5 +58,5 @@ pub fn join(sack: &Context<SiteData>) -> Result<Markup, RuntimeError> {
             }
         }
     };
-    base(sack, &meta, None, content)
+    base(sack, &meta, Some(&["scroll.js"]), content)
 }

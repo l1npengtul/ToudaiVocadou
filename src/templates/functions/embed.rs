@@ -1,4 +1,4 @@
-use crate::{die_linky::SocialLinkType, util::lnk_s3};
+use crate::die_linky::SocialLinkType;
 use anyhow::Error;
 use maud::{Render, html};
 use minijinja::{Error as JinjaError, ErrorKind};
@@ -9,23 +9,21 @@ use url::Url;
 use urlencoding::encode;
 
 pub fn embed(link: &str) -> Result<impl Render, Error> {
-    println!("processing: {}", link);
-
     if link.ends_with(".png")
         || link.ends_with(".jpeg")
         || link.ends_with(".jpg")
         || link.ends_with(".gif")
     {
         return Ok(html! {
-            img href=(lnk_s3(link)) {}
+            img href=(link) {}
         });
     }
 
     if link.ends_with(".mp3") || link.ends_with(".ogg") || link.ends_with(".wav") {
         return Ok(html! {
             figure {
-                audio controls src=(lnk_s3(link));
-                a href=(lnk_s3(link)) {
+                audio controls src=(link);
+                a href=(link) {
                     "ファイルをダウンロードする"
                 }
             }
@@ -34,8 +32,6 @@ pub fn embed(link: &str) -> Result<impl Render, Error> {
 
     let url_type = SocialLinkType::from_str(link).unwrap();
     let url_parse = Url::parse(link).unwrap();
-
-    println!("link type: {:?}", url_type);
 
     match url_type {
         SocialLinkType::Twitter | SocialLinkType::Xitter => Ok(html! {

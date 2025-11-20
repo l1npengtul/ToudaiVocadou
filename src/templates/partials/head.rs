@@ -1,8 +1,9 @@
 use crate::SiteData;
 use crate::metadata::{Metadata, render_metadata};
 use camino::Utf8PathBuf;
-use hauchiwa::loader::Style;
-use hauchiwa::{Context, RuntimeError};
+use hauchiwa::loader::{Script, Style};
+use hauchiwa::{Context, ContextError, RuntimeError};
+use log::warn;
 use maud::{Markup, html};
 
 pub fn html_head(
@@ -13,6 +14,22 @@ pub fn html_head(
     let style_path = Utf8PathBuf::from("styles/style.css");
     let style = sack.get::<Style>(&style_path)?.path.as_str();
 
+    let scripts = scripts
+        .iter()
+        .map(|script| {
+            let res = sack
+                .get::<Script>(format!("js/{}", script))
+                .map(|js| &js.path);
+            if let Err(why) = &res {
+                warn!(
+                    "Failed to find script {} due to {}... Ignoring...",
+                    script, why
+                )
+            }
+            res
+        })
+        .collect::<Vec<Result<&Utf8PathBuf, ContextError>>>();
+
     Ok(html! {
         head {
             meta charset="UTF-8";
@@ -21,7 +38,9 @@ pub fn html_head(
             link rel="stylesheet" href=(style);
             link rel="icon" type="image/x-icon" href="/favicon.ico";
             @for script_url in scripts {
-                script src=(script_url) {}
+                @if let Ok(s) = script_url {
+                    script src=(s) {}
+                }
             }
         }
     })

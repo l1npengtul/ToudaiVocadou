@@ -1,4 +1,3 @@
-use crate::lnk;
 use crate::post::PostMeta;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
@@ -33,7 +32,7 @@ pub fn news_posts(
                     "公式ポスト"
                 }
                 @for post_meta in &site_map.official_posts {
-                    (post_card(post_meta, name_map)?)
+                    (post_card(sack, post_meta, name_map)?)
                 }
             }
 
@@ -42,7 +41,7 @@ pub fn news_posts(
                     "メンバーポスト"
                 }
                 @for post_meta in &site_map.posts {
-                    (post_card(post_meta, name_map)?)
+                    (post_card(sack, post_meta, name_map)?)
                 }
             }
         }
@@ -51,7 +50,7 @@ pub fn news_posts(
     let metadata = Metadata {
         page_title: "ニュース".to_string(),
         page_image: None,
-        canonical_link: lnk("/news.html"),
+        canonical_link: "/news.html".to_string(),
         section: Sections::News,
         description: Some("東京大学ボカロP同好会のニュース".to_string()),
         author: None,
@@ -62,26 +61,20 @@ pub fn news_posts(
 }
 
 pub fn post_card(
+    context: &Context<SiteData>,
     post_meta: &PostMeta,
     name_map: &HashMap<String, String>,
 ) -> Result<Markup, RuntimeError> {
-    let image = match &post_meta.header_image {
-        None => "images/gray.jpg".to_string(),
-        Some(i) => i.clone(),
-    };
-
     let author_name = name_map.get(&post_meta.author).ok_or(RuntimeError::msg("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info".to_string()))?;
-
-    let post_short = post_meta.short.as_ref();
 
     Ok(html! {
         .item-card {
             .item-image {
-                img class="img-placeholder" href=(image) {}
+                img class="img-placeholder" href=(post_thumbnail(context, post_meta)?) {}
             }
             .item-title {
                 h3 {
-                    a href=(lnk(format!("/news/{}.html", post_reference(post_meta)))) {
+                    a href=(format!("/news/{}.html", post_reference(post_meta))) {
                         (post_meta.title)
                     }
                 }
@@ -97,13 +90,7 @@ pub fn post_card(
                     }
                 }
                 p {
-                    @if let Some(short) = post_short {
-                        (short)
-                    } @else {
-                        em {
-                            "筋が提供されませんでした。"
-                        }
-                    }
+                    (post_meta.short)
                 }
             }
         }
@@ -128,13 +115,12 @@ pub fn post_detail(
                         "⭐: 東大ボカロP同好会の公式ポスト"
                     }
                 }
-                a href=(lnk(format!("/members/{}.html", post_meta.author))) { p { (author_name) } }
+                a href=(format!("/members/{}.html", post_meta.author)) { p { (author_name) } }
                 .member-profile {
-                    @if let Some(image) = &post_meta.header_image {
-                        .member-profile-image {
-                            img href=(image) alt="header image" { }
-                        }
+                    .member-profile-image {
+                        img href=(post_thumbnail(sack, post_meta)?) alt="header image" { }
                     }
+
                 }
             }
         }
@@ -154,8 +140,8 @@ pub fn post_detail(
 
     let metadata = Metadata {
         page_title: post_meta.title.clone(),
-        page_image: post_meta.header_image.clone(),
-        canonical_link: format!("news/{}.html", post_reference(post_meta)),
+        page_image: Some(post_thumbnail(sack, post_meta)?),
+        canonical_link: format!("/news/{}.html", post_reference(post_meta)),
         section: Sections::NewsPost,
         description: Some(shorten(content)),
         author: Some(post_meta.author.clone()),
@@ -163,6 +149,15 @@ pub fn post_detail(
     };
 
     base(sack, &metadata, Some(&[]), inner)
+}
+
+pub fn post_thumbnail(_sack: &Context<SiteData>, item: &PostMeta) -> Result<String, RuntimeError> {
+    match &item.header_image {
+        Some(header) => Ok(format!("images/{}", header)),
+        None => Ok("images/gray.jpg".to_string()),
+    }
+
+    // TODO: Get thumbnail from SNS post.
 }
 
 pub fn post_reference(meta: &PostMeta) -> String {

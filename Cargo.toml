@@ -22,6 +22,7 @@ base64 = "0.22.1"
 rss = "2.0.12"
 log = "0.4.28"
 env_logger = "0.11.8"
+lol_html = "2.7.0"
 
 [dependencies.hauchiwa]
 version = "0.7.0"

@@ -8,7 +8,8 @@ use camino::Utf8PathBuf;
 use hauchiwa::RuntimeError;
 use hauchiwa::loader::Content;
 use hauchiwa::{Context, Page, loader::Image};
-use log::{error, warn};
+use log::{error, info};
+use lol_html::{Settings, element, rewrite_str};
 use maud::Markup;
 use minijinja::Environment;
 use pulldown_cmark::{CowStr, Event, Options, Parser, Tag, html::push_html};
@@ -86,7 +87,7 @@ pub fn image(sack: &Context<SiteData>, path: impl AsRef<str>) -> Result<String, 
 
     let picture_path = Utf8PathBuf::from(path);
     let image = sack.get::<Image>(&picture_path)?;
-    Ok(lnk_s3(image.path.clone()))
+    Ok(image.path.to_string())
 }
 
 pub struct AudioFile {}
@@ -96,11 +97,15 @@ pub fn audio(sack: &Context<SiteData>, path: impl AsRef<str>) -> Result<String, 
 
     let audio_path = Utf8PathBuf::from(path);
     let audio = sack.glob_one_with_file::<AudioFile>(audio_path.as_str())?;
-    Ok(lnk_s3(audio.file.file.as_str()))
+    Ok(audio.file.file.to_string())
 }
 
-pub fn markup_to_page(path: impl AsRef<str>, markup: Markup) -> Page {
-    Page::html(lnk(path), &markup.0)
+pub fn markup_to_page(
+    ctx: &Context<SiteData>,
+    path: impl AsRef<str>,
+    markup: Markup,
+) -> Result<Page, RuntimeError> {
+    rewrite_page(ctx, Page::html(path.as_ref(), &markup.0))
 }
 
 static SITE_URL: OnceLock<String> = OnceLock::new();
@@ -109,15 +114,15 @@ pub fn set_site_url(value: String) {
     SITE_URL.set(value).expect("Failed to set SITE_URL!")
 }
 
-pub fn lnk(url: impl AsRef<str>) -> String {
-    let root = SITE_URL.get().expect("SITE_URL not set!");
+// fn lnk(url: impl AsRef<str>) -> String {
+//     let root = SITE_URL.get().expect("SITE_URL not set!");
 
-    slash_guard(root, url.as_ref())
-}
+//     slash_guard(root, url.as_ref())
+// }
 
-pub fn site_url() -> String {
-    SITE_URL.get().expect("SITE_URL not set!").to_string()
-}
+// pub fn site_url() -> String {
+//     SITE_URL.get().expect("SITE_URL not set!").to_string()
+// }
 
 static EXTERNAL_BINARY_URL: OnceLock<String> = OnceLock::new();
 
@@ -137,27 +142,35 @@ pub fn site_root() -> &'static str {
     SITE_ROOT.get().expect("SITE_ROOT not set!")
 }
 
-pub fn lnk_s3(url: impl AsRef<str>) -> String {
-    let url = url.as_ref();
+// fn lnk_s3(url: impl AsRef<str>) -> String {
+//     let url = url.as_ref();
 
-    if let Ok(u) = Url::parse(url) {
-        warn!("Warning: Passed link to lnk that is already a url");
-        return u.to_string();
-    }
+//     if let Ok(u) = Url::parse(url) {
+//         warn!("Warning: Passed link to lnk that is already a url");
+//         return u.to_string();
+//     }
 
-    let root = if url.starts_with("miku:") {
-        EXTERNAL_BINARY_URL
-            .get()
-            .expect("EXTERNAL_BINARY_URL not set!")
-            .to_string()
-    } else {
-        site_url()
-    };
+//     let root = if url.starts_with("miku:") {
+//         EXTERNAL_BINARY_URL
+//             .get()
+//             .expect("EXTERNAL_BINARY_URL not set!")
+//             .to_string()
+//     } else {
+//         site_url()
+//     };
 
-    slash_guard(&root, url)
-}
+//     slash_guard(&root, url)
+// // }
 
 fn slash_guard(root: &str, thing: &str) -> String {
+    if root == "." {
+        return if thing.starts_with("/") {
+            format!("/{}", thing)
+        } else {
+            thing.to_string()
+        };
+    }
+
     if thing.starts_with("/") {
         format!("{root}{}", thing)
     } else {
@@ -216,5 +229,108 @@ where
         );
     }
 
-    Ok(Page::html(lnk(final_url), work_rendered?.into_string()))
+    Ok(Page::html(final_url, work_rendered?.into_string()))
+}
+
+pub fn rewrite_settings(site_url: &str) -> Settings<'_, '_> {
+    Settings {
+        element_content_handlers: vec![
+            // element!("script", |element| {
+            //     element.set_attribute("async", "")?;
+            //     element.set_attribute("defer", "")?;
+            //     Ok(())
+            // }),
+            // element!("img", |element| {
+            //     element.set_attribute("loading", "lazy")?;
+
+            //     Ok(())
+            // }),
+            // element!("iframe", |element| {
+            //     element.set_attribute("loading", "lazy")?;
+
+            //     Ok(())
+            // }),
+            element!("[href]", |element| {
+                let referring_to = match element.get_attribute("href") {
+                    Some(r) => r,
+                    None => {
+                        return Ok(());
+                    }
+                };
+
+                let rewritten_lnk = rewrite_link(site_url, referring_to)?;
+                element.set_attribute("href", &rewritten_lnk)?;
+
+                Ok(())
+            }),
+            element!("[src]", |element| {
+                let referring_to = match element.get_attribute("src") {
+                    Some(r) => r,
+                    None => {
+                        return Ok(());
+                    }
+                };
+
+                // check if this refer is relative
+                let rewritten_lnk = rewrite_link(site_url, referring_to)?;
+                element.set_attribute("src", &rewritten_lnk)?;
+
+                Ok(())
+            }),
+        ],
+        ..Settings::default()
+    }
+}
+
+pub fn rewrite_html(text: &str, settings: Settings<'_, '_>) -> Result<String, RuntimeError> {
+    rewrite_str(text, settings).map_err(|why| RuntimeError::msg(why.to_string()))
+}
+
+pub fn rewrite_page(context: &Context<SiteData>, mut page: Page) -> Result<Page, RuntimeError> {
+    let build_id = context.get_globals().data.build_id;
+    let site_url = &context.get_globals().data.site_url;
+    let pgpath = &page.path;
+
+    if page.path.starts_with("/") {
+        panic!("page path {} starts with illegal /", page.path);
+    }
+    if let Some(extension) = page.path.extension()
+        && extension != "html"
+    {
+        info!(
+            "BUILD-{}: Skipping page {}, not a html page.",
+            build_id, pgpath
+        );
+        return Ok(page);
+    }
+
+    info!("BUILD-{}: Rewriting {}", build_id, pgpath);
+    let out = rewrite_html(&page.text, rewrite_settings(site_url))?;
+    page.text = out;
+
+    Ok(page)
+}
+
+pub fn rewrite_link(site_url: &str, link: String) -> Result<String, anyhow::Error> {
+    if link.starts_with("..") || link.starts_with("#") || link.starts_with("https://") {
+        return Ok(link);
+    }
+    if let Ok(mut url) = Url::parse(&link) {
+        url.set_scheme("https")
+            .map_err(|_| anyhow::Error::msg("???"))?;
+        return Ok(url.to_string());
+    }
+    // run our transformations
+    if link.starts_with("./") {
+        let striped = link.strip_prefix("./").unwrap();
+        let fixed = slash_guard(site_url, striped);
+        return Ok(fixed);
+    }
+    if link.starts_with(".") {
+        let striped = link.strip_prefix(".").unwrap();
+        let fixed = slash_guard(site_url, striped);
+        return Ok(fixed);
+    }
+
+    Ok(link)
 }
