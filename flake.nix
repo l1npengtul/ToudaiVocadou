@@ -43,6 +43,8 @@
               http-server
               esbuild
               lldb
+              qrrs
+              qrencode
             ]);
 
           env.RUST_SRC_PATH = "${rustbin}/lib/rustlib/src/rust/library";
