@@ -188,7 +188,7 @@ pub fn member_detail(
                         @if featured_posts.is_empty() {
                             p .work-description style="text-align: center;" {
                                 em {
-                                    "代表作品がありません。"
+                                    "ポストがありません。"
                                 }
                             }
                         }

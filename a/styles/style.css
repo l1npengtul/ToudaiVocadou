@@ -212,38 +212,6 @@ section h2 {
     color: #5d7cf9;
 }
 
-/* 作品紹介セクション */
-#works {
-    background-color: #f0f5ff;
-}
-
-.works-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 30px;
-}
-
-.work-item {
-    background-color: #fff;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-}
-
-.work-image {
-    height: 200px;
-}
-
-.work-item h3 {
-    padding: 15px 20px 0;
-    font-size: 1.2rem;
-}
-
-.work-item p {
-    padding: 0 20px 20px;
-    color: #666;
-}
-
 /* 入会案内セクション */
 #join {
     background-color: #fff;
@@ -390,8 +358,10 @@ section h2 {
 }
 
 .member-profile-info {
-    flex: 2;
+    flex: 1;
     min-width: 300px;
+    display: flex;
+    flex-direction: column;
 }
 
 .member-profile-info h2 {
@@ -433,10 +403,8 @@ section h2 {
 
 .work-youtube-container {
     position: relative;
-    width: 100%;
-    padding-bottom: 56.25%; /* 16:9のアスペクト比 */
-    height: 0;
     margin-bottom: 20px;
+    aspect-ratio: 1.78;
 }
 
 .work-youtube-container iframe {
@@ -449,10 +417,11 @@ section h2 {
 }
 
 .work-description {
-    margin-top: 20px;
-    margin-bottom: 20px;
+    margin-top: 0.75em;
+    margin-bottom: 1.5em;
     line-height: 1.8;
-    margin-left: 0.75em;
+    margin-left: 1em;
+    margin-right: 1em;    
 }
 
 .click-button {
@@ -550,6 +519,7 @@ section h2 {
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    aspect-ratio: 1.78;
 }
 
 #youtube-player {
@@ -698,15 +668,15 @@ footer .container {
     gap: 20px;
     padding-right: 20px;
     will-change: transform;
-    animation: scrolling 25s linear infinite;
+    animation: scrolling 45s linear infinite;
 }
 
 @keyframes scrolling {
     0% {
-      transform: translateX(0);
+      transform: translateX(-100%);
     }
     100% {
-      transform: translateX(-100%);
+      transform: translateX(0);
     }
 }
 
@@ -714,4 +684,88 @@ footer .container {
     display: flex;
     justify-content: center;
     flex-direction: row;
+}
+
+.work-item {
+    display: block;
+    background-color: white;
+    border-radius: 10px;
+}
+
+.work-card {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 作品紹介セクション */
+#works {
+    background-color: #f0f5ff;
+}
+
+.works-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 30px;
+}
+
+.work-date {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.work-detail-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.work-detail {
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+    gap: 30px;
+}
+
+.work-profile {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 60px;
+}
+
+.work-thumbnail {
+    flex: 1;
+    min-width: 300px;
+}
+
+.work-info {
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+}
+
+.work-info h2 {
+    font-size: 2.2rem;
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+.work-bio {
+    margin-bottom: 30px;
+    white-space: pre-line;
+}
+
+.work-featured-work {
+    color: #666;
+}
+
+.work-featured-work-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.work-no-description {
+    text-align: center;
 }

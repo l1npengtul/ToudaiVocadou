@@ -92,6 +92,7 @@ pub fn image(sack: &Context<SiteData>, path: impl AsRef<str>) -> Result<String, 
 
 pub struct AudioFile {}
 
+#[allow(dead_code)]
 pub fn audio(sack: &Context<SiteData>, path: impl AsRef<str>) -> Result<String, RuntimeError> {
     let path = path.as_ref();
 
