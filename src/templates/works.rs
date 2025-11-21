@@ -4,9 +4,11 @@ use crate::die_linky::SocialLinkType;
 use crate::metadata::Metadata;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
+use crate::templates::functions::embed::embed;
+use crate::templates::functions::sns::sns_icon;
 use crate::templates::members::big_display_for_item;
 use crate::templates::partials::navbar::Sections;
-use crate::util::{audio, image, shorten};
+use crate::util::{image, shorten};
 use crate::work::WorkMeta;
 use base64::Engine;
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
@@ -51,9 +53,18 @@ pub fn works(
                 h2 {
                     "リリース"
                 }
-                .listcontainer {
-                    @for work in &site_map.works {
-                        (work_card(sack, work, name_map)?)
+                .zcontainer {
+                    .member-grid {
+                        @for work in &site_map.works {
+                            (work_card(sack, work, name_map)?)
+                        }
+                        @if site_map.works.is_empty() {
+                            p .work-description style="text-align: center;" {
+                                em {
+                                    "リリースがありません。"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -64,14 +75,16 @@ pub fn works(
                 h2 {
                 "アルバム"
                 }
-                .listcontainer {
-                    @for album in &site_map.albums {
-                        (album_card(sack, album, name_map)?)
-                    }
-                    @if site_map.albums.is_empty() {
-                        p .work-description style="text-align: center;" {
-                            em {
-                                "アルバムがありません。"
+                .zcontainer {
+                    .member-grid {
+                        @for album in &site_map.albums {
+                            (album_card(sack, album, name_map)?)
+                        }
+                        @if site_map.albums.is_empty() {
+                            p .work-description style="text-align: center;" {
+                                em {
+                                    "アルバムがありません。"
+                                }
                             }
                         }
                     }
@@ -101,26 +114,28 @@ pub fn work_card(
     let author_name = name_map.get(&work_meta.author).ok_or(RuntimeError::msg("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it?".to_string()))?;
 
     Ok(html! {
-        .work-item-detail {
-            h4 {
-                a href=(format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author))){
-                    (work_meta.title)
-                }
-            }
-            .work-youtube-container {
-                img .work-item-thumb src=(thumbnail_link(sack, work_meta)?) alt=(work_meta.title) {}
-            }
-            .work-description {
-                p .member-role {
-                    (work_meta.date)
-                }
-                a href=(format!("/members/{}.html", work_meta.author)) {
-                    p .member-department {
-                        (author_name)
+        .work-item {
+            .work-card {
+                h4 .member-info {
+                    a .member-link href=(format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author))){
+                        (work_meta.title)
                     }
                 }
-                p {
-                    (work_meta.short.clone().unwrap_or_default())
+                .work-thumbnail {
+                    img .work-item-thumb src=(thumbnail_link(sack, work_meta)?) alt=(work_meta.title) {}
+                }
+                .work-description {
+                    a href=(format!("/members/{}.html", work_meta.author)) {
+                        p .member-role {
+                            (author_name)
+                        }
+                    }
+                    p .work-date {
+                        (work_meta.date)
+                    }
+                    p {
+                        (work_meta.short.clone().unwrap_or_default())
+                    }
                 }
             }
         }
@@ -147,31 +162,28 @@ pub fn album_card(
     name_map: &HashMap<String, String>,
 ) -> Result<Markup, RuntimeError> {
     Ok(html! {
-        .item-card {
-            .item-type {
-                p {
-                    "アルバム"
-                }
-            }
-            .item-image {
-                img .work-item-thumb src=(image(sack, &album_meta.front_cover)?) alt=(&album_meta.title) {}
-            }
-            .item-title {
-                h3 {
+        .work-item {
+            .work-card {
+                h4 .member-info {
                     a href=(
                         format!("/works/albums/{}.html", album_reference(&album_meta.title, &album_meta.front_cover))
                     ) {
                         (album_meta.title)
                     }
                 }
-                p .member-role {
-                    (album_meta.release_date)
+                .work-thumbnail {
+                    img .work-item-thumb src=(image(sack, &album_meta.front_cover)?) alt=(&album_meta.title) {}
                 }
-                p .member-department {
-                    (album_meta.contributors_str(name_map))
-                }
-                p {
-                    (album_meta.short)
+                .work-description {
+                    p .member-role {
+                        (album_meta.contributors_str(name_map))
+                    }
+                    p .work-date {
+                        (album_meta.release_date)
+                    }
+                    p {
+                        (album_meta.short)
+                    }
                 }
             }
         }
@@ -216,7 +228,6 @@ pub fn album_detail(
                                 }
                             }
                         }
-                        hr {}
                         p {
                             (album_meta.short)
                         }
@@ -281,32 +292,67 @@ pub fn work_detail(
         section #work-section {
             .work-detail-container {
                 .work-detail {
-                    .work-image {
-                        (thumbnail_link(sack, work_meta)?)
+                    .work-thumbnail {
+                        img .img-placeholder src=(thumbnail_link(sack, work_meta)?) alt=(work_meta.title);
                     }
                     .work-info {
                         h2 { (work_meta.title) }
                         .work-featured-work {
                             @if work_meta.featured {
-                                h4 { "このリリースはメンバーページでフィーチャーされています。" }
+                                h5 { "⭐: このリリースはメンバーページでフィーチャーされています。" }
                             }
                         }
-                        a href=(format!("/members/{}.html", work_meta.author)) { p { (author_name) } }
-                        hr {}
+                        .work-date {
+                            p { (work_meta.date) }
+                        }
+                        a .member-role .member-bio href=(format!("/members/{}.html", work_meta.author)) { p { (author_name) } }
                         @if let Some(short) = &work_meta.short {
-                            p { (short) }
+                            p .work-bio { (short) }
+                        }
+                        .member-links {
+                            @for link in &work_meta.streaming {
+                                (sns_icon(sack, link)?)
+                            }
                         }
                     }
                 }
             }
-            .work-description {
-                (PreEscaped(content))
-            }
-        }
 
-        .back-button{
-            a href="../../works.html" {
-                "リリース集合一覧に戻る"
+            .member-works-container {
+                section .work-featured-work-container {
+                    h2 { "作品リンク" }
+                    @if let Some(link) = &work_meta.link {
+                        .youtube-embed-container {
+                            (embed(link.as_str())?)
+                        }
+                        .click-button {
+                            a href=(link) alt=(&work_meta.title) {
+                                p { "現本に行く" }
+                            }
+                        }
+                    } @else {
+                        p .work-no-description {
+                            em { "リンクがありません。" }
+                        }
+                    }
+
+                }
+
+                section #description .work-description {
+                    h2 { "作品説明" }
+                    p {(PreEscaped(content))}
+                    @if content.is_empty() {
+                        p .work-no-description {
+                            em { "説明がありません。" }
+                        }
+                    }
+                }
+
+                .back-button{
+                    a href="../../works.html" {
+                        "リリース集合一覧に戻る"
+                    }
+                }
             }
         }
     };
@@ -333,7 +379,7 @@ pub fn thumbnail_link(sack: &Context<SiteData>, meta: &WorkMeta) -> Result<Strin
     match &meta.display {
         crate::work::CoverOrImage::Cover(cover) => image(sack, cover),
         crate::work::CoverOrImage::Link(url) => get_link_image_thumb(sack, url.as_str()),
-        crate::work::CoverOrImage::AudioFile(audio_file) => audio(sack, audio_file),
+        crate::work::CoverOrImage::AudioFile(_audio_file) => Ok("".to_string()),
     }
 }
 
