@@ -19,10 +19,23 @@ function embedElement(embed) {
     document.getElementById("embed").innerHTML = embed
 }
 
+var last_picked;
+
 async function pickRandomRenderHtml() {
     let workslist = await json;
-    let picked = workslist[Math.floor(Math.random() * workslist.length)]
-
+    let new_pick = Math.floor(Math.random() * workslist.length);
+    if (typeof last_picked === 'undefined') {
+        last_picked = new_pick;
+    } else if (last_picked == new_pick) {
+        while (true) {
+            new_pick = Math.floor(Math.random() * workslist.length);
+            if (last_picked !== new_pick) {
+                break;
+            }
+        }
+    }
+    let picked = workslist[new_pick];
+    last_picked = new_pick;
     if (picked.description !== null) {
         descriptionElement(picked.description);
     }
@@ -53,6 +66,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+
+    document.getElementById("reload").addEventListener("click", pickRandomRenderHtml)
+
+    pickRandomRenderHtml()
     
     // ナビゲーションのアクティブクラス制御
     const sections = document.querySelectorAll('section[id]');
@@ -76,10 +94,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         } });
-
-        document.getElementById("reload").addEventListener("click", pickRandomRenderHtml)
-
-        pickRandomRenderHtml()
     });
 
     // プレースホルダー画像のテキスト表示

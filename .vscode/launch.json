@@ -1,0 +1,74 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Debug unit tests in library 'vocadou_core'",
+            "type": "lldb",
+            "request": "launch",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--package=vocadou-core"
+                ]
+            }
+        },
+        {
+            "name": "Debug executable 'vocadoubot'",
+            "type": "lldb",
+            "request": "launch",
+            "cargo": {
+                "args": [
+                    "run",
+                    "--bin=vocadoubot",
+                    "--package=vocadoubot"
+                ]
+            },
+            "args": []
+        },
+        {
+            "name": "Debug unit tests in executable 'vocadoubot'",
+            "type": "lldb",
+            "request": "launch",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--bin=vocadoubot",
+                    "--package=vocadoubot"
+                ]
+            }
+        },
+        {
+            "name": "Debug executable 'toudaivocadou'",
+            "type": "lldb",
+            "request": "launch",
+            "cargo": {
+                "args": [
+                    "run",
+                    "--bin=toudaivocadou",
+                    "--package=toudaivocadou"
+                ]
+            },
+            "args": [
+
+                "-d \"a\"",
+                "-s \".\""
+            ]
+        },
+        {
+            "name": "Debug unit tests in executable 'toudaivocadou'",
+            "type": "lldb",
+            "request": "launch",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--bin=toudaivocadou",
+                    "--package=toudaivocadou"
+                ]
+            }
+        }
+    ]
+}

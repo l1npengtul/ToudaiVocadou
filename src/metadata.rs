@@ -30,7 +30,7 @@ pub fn render_metadata(
         Sections::NewsPost => "article",
         Sections::Works => "website",
         Sections::WorksPost => "article",
-        Sections::AlbumPost => "album",
+        Sections::AlbumPost => "albums",
     };
 
     let others = match page_type {

@@ -1,4 +1,4 @@
-use crate::post::PostMeta;
+use crate::news::NewsMeta;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
 use crate::templates::partials::navbar::Sections;
@@ -28,20 +28,15 @@ pub fn news_posts(
 
         section #list {
             .listcontainer {
-                h3 {
-                    "公式ポスト"
-                }
-                @for post_meta in &site_map.official_posts {
+                @for post_meta in &site_map.news {
                     (post_card(sack, post_meta, name_map)?)
                 }
-            }
-
-            .listcontainer {
-                h3 {
-                    "メンバーポスト"
-                }
-                @for post_meta in &site_map.posts {
-                    (post_card(sack, post_meta, name_map)?)
+                @if site_map.news.is_empty() {
+                    p .work-description style="text-align: center;" {
+                        em {
+                            "ニュースがありません。"
+                        }
+                    }
                 }
             }
         }
@@ -62,7 +57,7 @@ pub fn news_posts(
 
 pub fn post_card(
     context: &Context<SiteData>,
-    post_meta: &PostMeta,
+    post_meta: &NewsMeta,
     name_map: &HashMap<String, String>,
 ) -> Result<Markup, RuntimeError> {
     let author_name = name_map.get(&post_meta.author).ok_or(RuntimeError::msg("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info".to_string()))?;
@@ -85,11 +80,6 @@ pub fn post_card(
                     (author_name)
                 }
                 p {
-                    @if post_meta.official {
-                        "⭐ 公式"
-                    }
-                }
-                p {
                     (post_meta.short)
                 }
             }
@@ -99,7 +89,7 @@ pub fn post_card(
 
 pub fn post_detail(
     sack: &Context<SiteData>,
-    post_meta: &PostMeta,
+    post_meta: &NewsMeta,
     content: &str,
     name_map: &HashMap<String, String>,
 ) -> Result<Markup, RuntimeError> {
@@ -110,11 +100,6 @@ pub fn post_detail(
             .member-detail-container {
                 h2 { (post_meta.title) }
                 p { (post_meta.date) }
-                @if post_meta.official {
-                    p {
-                        "⭐: 東大ボカロP同好会の公式ポスト"
-                    }
-                }
                 a href=(format!("/members/{}.html", post_meta.author)) { p { (author_name) } }
                 .member-profile {
                     .member-profile-image {
@@ -125,8 +110,8 @@ pub fn post_detail(
             }
         }
 
-        section .container{
-            .about-content {
+        section #post-content .container{
+            .description {
                 (PreEscaped(content))
             }
         }
@@ -151,7 +136,7 @@ pub fn post_detail(
     base(sack, &metadata, Some(&[]), inner)
 }
 
-pub fn post_thumbnail(_sack: &Context<SiteData>, item: &PostMeta) -> Result<String, RuntimeError> {
+pub fn post_thumbnail(_sack: &Context<SiteData>, item: &NewsMeta) -> Result<String, RuntimeError> {
     match &item.header_image {
         Some(header) => Ok(format!("images/{}", header)),
         None => Ok("images/gray.jpg".to_string()),
@@ -160,7 +145,7 @@ pub fn post_thumbnail(_sack: &Context<SiteData>, item: &PostMeta) -> Result<Stri
     // TODO: Get thumbnail from SNS post.
 }
 
-pub fn post_reference(meta: &PostMeta) -> String {
+pub fn post_reference(meta: &NewsMeta) -> String {
     let authorhash = seahash::hash(meta.author.as_bytes()) as u128;
     let titlehash = seahash::hash(meta.title.as_bytes()) as u128;
     let combined = (authorhash << 64) + titlehash;

@@ -1,6 +1,6 @@
 use crate::album::AlbumMeta;
 use crate::member::MemberMeta;
-use crate::post::PostMeta;
+use crate::news::NewsMeta;
 use crate::read::{
     parse_front_matter_and_fetch_contents, parse_post_meta, parse_work_meta, robots_txt,
 };
@@ -39,8 +39,8 @@ mod album;
 mod die_linky;
 mod member;
 mod metadata;
+mod news;
 mod optimize;
-mod post;
 mod read;
 mod sitemap;
 pub mod templates;
@@ -98,7 +98,7 @@ pub fn build_site(build_id: u64, site_url: String) -> Result<(), hauchiwa::Hauch
             loader::glob_content(site_root(), "works/[!_]*.md", parse_work_meta),
             loader::glob_content(
                 site_root(),
-                "album/[!_]*.md",
+                "albums/[!_]*.md",
                 parse_front_matter_and_fetch_contents::<AlbumMeta>,
             ),
             // load CSS
@@ -200,7 +200,7 @@ pub fn build_site(build_id: u64, site_url: String) -> Result<(), hauchiwa::Hauch
                 ctx.get_globals().data.build_id
             );
 
-            let news = ctx.glob_with_file::<Content<PostMeta>>("posts/[!_]*.md")?;
+            let news = ctx.glob_with_file::<Content<NewsMeta>>("posts/[!_]*.md")?;
             for post in &news {
                 let file_path = &post.file.file;
                 let post_meta = post.data;
@@ -228,14 +228,13 @@ pub fn build_site(build_id: u64, site_url: String) -> Result<(), hauchiwa::Hauch
                 ctx.get_globals().data.build_id
             );
 
-            let sitemap = SiteMap {
+            let mut sitemap = SiteMap {
                 members: members.iter().map(|member| { &member.data.meta }).cloned().collect(),
-                official_posts: news.iter().map(|posts| &posts.data.meta).filter(|post| post.official).cloned().collect(),
-                posts: news.iter().map(|posts| &posts.data.meta).filter(|post| !post.official).cloned().collect(),
+                news: news.iter().map(|posts| &posts.data.meta).cloned().collect(),
                 works: works.iter().map(|works| &works.data.meta).cloned().collect(),
                 albums: albums.iter().map(|album| &album.data.meta).cloned().collect(),
-                featured_works: works.iter().map(|works| &works.data.meta).filter(|work| work.featured).cloned().collect(),
             };
+            sitemap.sort_self();
             // TODO: add "worked on albums" and "posts". 
 
             info!(
@@ -399,12 +398,14 @@ fn main() {
     let args = Args::parse();
     set_external_bin_url(args.external_url_root.to_string());
     set_site_root(
-        args.data_root
-            .to_str()
-            .expect("Invalid SITE_ROOT path!")
-            .to_string(),
+        // args.data_root
+        //     .to_str()
+        //     .expect("Invalid SITE_ROOT path!")
+        //     .to_string(),
+        "a".to_string(),
     );
-    set_site_url(args.site_url.to_string());
+    // set_site_url(args.site_url.to_string());
+    set_site_url(".".to_string());
 
-    build_site(args.build_id, args.site_url).expect("Failed to build site!")
+    build_site(args.build_id, ".".to_string()).expect("Failed to build site!")
 }

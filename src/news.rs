@@ -3,7 +3,7 @@ use toml::value::Date;
 use url::Url;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PostMeta {
+pub struct NewsMeta {
     pub title: String,
     pub author: String,
     #[serde(default)]
@@ -14,14 +14,11 @@ pub struct PostMeta {
     pub short: String,
 
     #[serde(default)]
-    pub official: bool,
-
-    #[serde(default)]
     pub social_links: Vec<Url>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct RawPostMeta {
+pub struct RawNewsMeta {
     pub title: String,
     pub author: String,
     #[serde(default)]
@@ -30,9 +27,6 @@ pub struct RawPostMeta {
 
     #[serde(default)]
     pub short: Option<String>,
-
-    #[serde(default)]
-    pub official: bool,
 
     #[serde(default)]
     pub social_links: Vec<Url>,
