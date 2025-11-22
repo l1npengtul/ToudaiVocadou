@@ -4,7 +4,7 @@ ascii_name = "l1npengtul"
 entry_year = 2024
 short = "魚。"
 
-links = [ "https://www.youtube.com/@l1npengtul", "https://bsky.app/profile/l1npengtul.lol" ]
+links = [ "https://www.youtube.com/@l1npengtul", "https://bsky.app/profile/l1npengtul.lol", "https://twitter.com/l1npengtul" ]
 
 ===
 

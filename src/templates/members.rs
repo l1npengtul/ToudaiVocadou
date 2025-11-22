@@ -1,10 +1,9 @@
 use crate::SiteData;
 use crate::member::MemberMeta;
 use crate::metadata::Metadata;
-use crate::post::PostMeta;
+use crate::news::NewsMeta;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
-use crate::templates::functions::embed::embed;
 use crate::templates::functions::sns::sns_icon;
 use crate::templates::news::{post_reference, post_thumbnail};
 use crate::templates::partials::navbar::Sections;
@@ -14,43 +13,8 @@ use crate::work::WorkMeta;
 use hauchiwa::Context;
 use hauchiwa::RuntimeError;
 use maud::{Markup, PreEscaped, html};
-use std::cmp::Ordering;
 
 pub fn members(sack: &Context<SiteData>, site_map: &SiteMap) -> Result<Markup, RuntimeError> {
-    let mut site_members = site_map.members.clone();
-    site_members.sort_by(|a, b| {
-        let a_str = a.position.clone().unwrap_or_default();
-        let b_str = b.position.clone().unwrap_or_default();
-
-        if a_str == "代表" {
-            return Ordering::Less;
-        } else if b_str == "代表" {
-            return Ordering::Greater;
-        }
-
-        if a_str == "副代表" {
-            return Ordering::Less;
-        } else if b_str == "副代表" {
-            return Ordering::Greater;
-        }
-
-        if a_str == "広報" {
-            return Ordering::Less;
-        } else if b_str == "広報" {
-            return Ordering::Greater;
-        }
-
-        if a.position.is_some() && b.position.is_none() {
-            return Ordering::Less;
-        } else if a.position.is_none() && b.position.is_some() {
-            return Ordering::Greater;
-        } else if a.position == b.position {
-            return a.name.cmp(&b.name);
-        }
-
-        a.name.cmp(&b.name)
-    });
-
     let inner = html! {
         section #members-hero {
             .container {
@@ -62,7 +26,7 @@ pub fn members(sack: &Context<SiteData>, site_map: &SiteMap) -> Result<Markup, R
         section #staff-members {
             .zcontainer {
                 .member-grid {
-                    @for member in &site_members {
+                    @for member in &site_map.members {
                         (member_card(sack, member)?)
                     }
                 }
@@ -125,18 +89,16 @@ pub fn member_detail(
     content: &str,
 ) -> Result<Markup, RuntimeError> {
     let this_featured_work = site_map
-        .featured_works
+        .works
         .iter()
-        .filter(|featured| featured.author == member.ascii_name)
+        .filter(|featured| featured.author == member.ascii_name && featured.featured)
         .collect::<Vec<&WorkMeta>>();
 
-    let mut featured_posts = site_map
-        .posts
+    let featured_posts = site_map
+        .news
         .iter()
         .filter(|post| post.author == member.ascii_name)
-        .collect::<Vec<&PostMeta>>();
-
-    featured_posts.sort_by(|post_a, post_b| post_a.date.cmp(&post_b.date));
+        .collect::<Vec<&NewsMeta>>();
 
     let inner = html! {
         section #member-detail {
@@ -237,7 +199,7 @@ pub fn featured_work_item_detail(
 
 pub fn featured_post_detail(
     sack: &Context<SiteData>,
-    item: &PostMeta,
+    item: &NewsMeta,
 ) -> Result<Markup, RuntimeError> {
     let post_ref = post_reference(item);
 
@@ -249,40 +211,6 @@ pub fn featured_post_detail(
             .post-details {
                 h4 { (item.title) }
                 p { (item.short) }
-            }
-        }
-    })
-}
-
-pub fn big_display_for_item(
-    id: &str,
-    detailed: Option<&str>,
-    title: &str,
-    link: &str,
-    short: Option<&str>,
-) -> Result<Markup, RuntimeError> {
-    Ok(html! {
-        .work-item-detail id=(id) {
-            h4 { (title) }
-            .work-youtube-container {
-                (embed(link)?)
-            }
-
-            .work-description {
-                @if let Some(desc) = short {
-                    p { (desc) }
-                }
-                @else {
-                    p {}
-                }
-            }
-
-            @if let Some(detail) = detailed {
-                .back-button{
-                    a href=(detail) {
-                        "詳しく見る"
-                    }
-                }
             }
         }
     })

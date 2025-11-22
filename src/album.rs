@@ -32,14 +32,17 @@ pub struct AlbumMeta {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum TracklistTrack {
-    Link(String),
-    Track {
-        author: String,
-        title: String,
-        duration_seconds: Option<i32>,
-    },
+pub struct TracklistTrack {
+    pub author: String,
+    pub title: String,
+    #[serde(default)]
+    pub duration_seconds: Option<i32>,
+    #[serde(default)]
+    pub link: Option<String>,
+    #[serde(default)]
+    pub on_site: bool,
+    #[serde(default)]
+    pub external_author: bool,
 }
 
 impl AlbumMeta {

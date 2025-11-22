@@ -3,7 +3,7 @@ use std::io::Read;
 use std::str::FromStr;
 
 use crate::FRONT_MATTER_SPLIT;
-use crate::post::{PostMeta, RawPostMeta};
+use crate::news::{NewsMeta, RawNewsMeta};
 use crate::work::{CoverOrImage, RawWorkMeta, WorkMeta};
 use hauchiwa::Page;
 use hauchiwa::RuntimeError;
@@ -29,8 +29,8 @@ where
     Ok((toml_parsed, content.to_string()))
 }
 
-pub fn parse_post_meta(file: &str) -> Result<(PostMeta, String), anyhow::Error> {
-    let (raw_post, content) = parse_front_matter_and_fetch_contents::<RawPostMeta>(file)?;
+pub fn parse_post_meta(file: &str) -> Result<(NewsMeta, String), anyhow::Error> {
+    let (raw_post, content) = parse_front_matter_and_fetch_contents::<RawNewsMeta>(file)?;
 
     let new_short = match raw_post.short {
         Some(shrt) => shrt,
@@ -38,13 +38,12 @@ pub fn parse_post_meta(file: &str) -> Result<(PostMeta, String), anyhow::Error> 
     };
 
     Ok((
-        PostMeta {
+        NewsMeta {
             title: raw_post.title,
             author: raw_post.author,
             header_image: raw_post.header_image,
             date: raw_post.date,
             short: new_short,
-            official: raw_post.official,
             social_links: raw_post.social_links,
         },
         content,

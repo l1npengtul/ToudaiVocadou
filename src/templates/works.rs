@@ -6,7 +6,6 @@ use crate::sitemap::SiteMap;
 use crate::templates::base::base;
 use crate::templates::functions::embed::embed;
 use crate::templates::functions::sns::sns_icon;
-use crate::templates::members::big_display_for_item;
 use crate::templates::partials::navbar::Sections;
 use crate::util::{image, shorten};
 use crate::work::WorkMeta;
@@ -161,6 +160,14 @@ pub fn album_card(
     album_meta: &AlbumMeta,
     name_map: &HashMap<String, String>,
 ) -> Result<Markup, RuntimeError> {
+    let contribs = format!(
+        "{}...",
+        album_meta
+            .contributors_str(name_map)
+            .chars()
+            .take(18)
+            .collect::<String>()
+    );
     Ok(html! {
         .work-item {
             .work-card {
@@ -172,14 +179,17 @@ pub fn album_card(
                     }
                 }
                 .work-thumbnail {
-                    img .work-item-thumb src=(image(sack, &album_meta.front_cover)?) alt=(&album_meta.title) {}
+                    img .work-item-thumb src=(image(sack, format!("images/{}", &album_meta.front_cover))?) alt=(&album_meta.title) {}
                 }
                 .work-description {
                     p .member-role {
-                        (album_meta.contributors_str(name_map))
+                        (contribs)
                     }
                     p .work-date {
                         (album_meta.release_date)
+                    }
+                    @if let Some(subtitle) = &album_meta.subtitle {
+                        p { (subtitle) }
                     }
                     p {
                         (album_meta.short)
@@ -204,22 +214,24 @@ pub fn album_detail(
             }
         }
     });
-    let extra_contributors = album_meta.extra_contributors.iter();
 
-    let has_additional_illusts = !album_meta.other_covers.is_empty();
+    let extra_contributors = album_meta.extra_contributors.iter();
 
     let inner = html! {
         section #work-section {
             .work-detail-container {
                 .work-detail {
                     .work-image {
-                        (image(sack, &album_meta.front_cover)?)
+                        img .img-placeholder src=(image(sack, format!("images/{}", &album_meta.front_cover))?) alt=(album_meta.title);
                     }
                     .work-info {
                         h2 { (album_meta.title) }
+                        @if let Some(subtitle) = &album_meta.subtitle {
+                            p { (subtitle) }
+                        }
                         .work-contributors {
-                            h4 { "投稿者" }
                             p {
+                                "投稿者: "
                                 @for contrib in contributors {
                                     (contrib) " "
                                 }
@@ -231,48 +243,124 @@ pub fn album_detail(
                         p {
                             (album_meta.short)
                         }
-                        @if has_additional_illusts {
-                            .album-images {
-                                @for (header, imglnk) in &album_meta.other_covers {
-                                    h4 { (header) }
-                                    .work-item-detail {
-                                        (image(sack, imglnk)?)
+                    }
+                }
+            }
+
+            .member-works-container {
+                section #tracklist {
+                    h2 { "トラックリスト" }
+                    dl .tracklist-list  {
+                        @for (number, track) in album_meta.tracklist.iter().enumerate() {
+                            .tracklist-track {
+                                dt .track-title {
+                                    h2 {
+                                        (number + 1) ". "
+                                        @if track.on_site {
+                                            a href=(work_reference(&track.title, &track.author)) {
+                                                (track.title)
+                                            }
+                                        } @else if let Some(link) = &track.link {
+                                            a href=(link) {
+                                                (track.title)
+                                            }
+                                        } @else {
+                                            (track.title)
+                                        }
+                                    }
+                                }
+                                dd .track-author {
+                                    "投稿者: "
+                                    @if track.external_author {
+                                        (track.author)
+                                    } @else {
+                                        a href=(format!("/members/{}.html",  (name_map.get(&track.author).ok_or(RuntimeError::msg("User does not exist in album"))?))) {
+                                            (name_map.get(&track.author).ok_or(RuntimeError::msg("User does not exist in album"))?)
+                                        }
+                                    }
+                                }
+                                @if let Some(duration_seconds) = track.duration_seconds {
+                                    dd .track-length {
+                                        ({
+                                            let minutes = duration_seconds / 60;
+                                            let seconds = duration_seconds % 60;
+                                            format!("{}:{:02}", minutes, seconds)
+                                        })
                                     }
                                 }
                             }
                         }
-                        @if let Some(crossfade_demonstration) = &album_meta.crossfade_demonstration {
-                            (big_display_for_item(
-                                "試聴動画",
-                                None,
-                                "試聴動画 - Cross Fade Demonstration",
-                                crossfade_demonstration,
-                                None,
-                            )?)
+                    }
+                    @if let Some(link) = &album_meta.playlist_link {
+                        .click-button {
+                            a href=(link) alt=(&album_meta.title) {
+                                p { "プレイリストに行く" }
+                            }
                         }
                     }
                 }
-            }
-            .work-description {
-                (PreEscaped(content))
-            }
-        }
 
-        .back-button{
-            a href="../../works.html" {
-                "リリース集合一覧に戻る"
+                section #description .work-description {
+                    h2 { "説明" }
+                    .description {
+                        (PreEscaped(content))
+                    }
+                }
+
+                section #crossfade {
+                    h2 { "試聴動画" }
+                    @if let Some(crossfade_demonstration) = &album_meta.crossfade_demonstration {
+                        .work-youtube-container {
+                            .youtube-embed-container {
+                                (embed(crossfade_demonstration.as_str())?)
+                            }
+                        }
+                    } @else {
+                        p .work-no-description {
+                            em { "試聴動画がありません。" }
+                        }
+                    }
+                }
+
+
+                section #additional-album-images {
+                    h2 { "イラスト" }
+                    .container {
+                        .work-item-detail #frontcover {
+                            h4 { "フロントカーバー" }
+                            .work-youtube-container {
+                                img .work-item-thumb src=(image(sack, format!("images/{}", &album_meta.front_cover))?) alt=(album_meta.title);
+                            }
+                        }
+                        @for (header, imglnk) in &album_meta.other_covers {
+                            .work-item-detail #(header) {
+                                h4 { (header) }
+                                .work-item-thumb {
+                                    img .img-placeholder src=(image(sack, imglnk)?) alt=(header);
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+                .back-button{
+                    a href="../../works.html" {
+                        "リリース集合一覧に戻る"
+                    }
+                }
             }
         }
     };
 
     let metadata = Metadata {
         page_title: album_meta.title.clone(),
-        page_image: Some(album_meta.front_cover.to_string()),
+        page_image: None,
         canonical_link: format!(
             "/works/albums/{}.html",
             album_reference(&album_meta.title, &album_meta.front_cover)
         ),
-        section: Sections::WorksPost,
+        section: Sections::AlbumPost,
         description: Some(album_meta.short.clone()),
         author: Some(album_meta.contributors_str(name_map)),
         date: Some(album_meta.release_date.to_string()),
@@ -340,7 +428,9 @@ pub fn work_detail(
 
                 section #description .work-description {
                     h2 { "作品説明" }
-                    p {(PreEscaped(content))}
+                    .description {
+                        (PreEscaped(content))
+                    }
                     @if content.is_empty() {
                         p .work-no-description {
                             em { "説明がありません。" }
