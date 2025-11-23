@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+
 use crate::SiteData;
+use crate::album::AlbumMeta;
 use crate::member::MemberMeta;
 use crate::metadata::Metadata;
 use crate::news::NewsMeta;
@@ -7,7 +10,7 @@ use crate::templates::base::base;
 use crate::templates::functions::sns::sns_icon;
 use crate::templates::news::{post_reference, post_thumbnail};
 use crate::templates::partials::navbar::Sections;
-use crate::templates::works::{thumbnail_link, work_reference};
+use crate::templates::works::{album_reference, thumbnail_link, work_reference};
 use crate::util::image;
 use crate::work::WorkMeta;
 use hauchiwa::Context;
@@ -86,19 +89,29 @@ pub fn member_detail(
     sack: &Context<SiteData>,
     member: &MemberMeta,
     site_map: &SiteMap,
+    namemap: &HashMap<String, String>,
     content: &str,
 ) -> Result<Markup, RuntimeError> {
     let this_featured_work = site_map
         .works
         .iter()
         .filter(|featured| featured.author == member.ascii_name && featured.featured)
+        .take(5)
         .collect::<Vec<&WorkMeta>>();
 
     let featured_posts = site_map
         .news
         .iter()
-        .filter(|post| post.author == member.ascii_name)
+        .filter(|post| post.author.as_ref() == Some(&member.ascii_name))
+        .take(5)
         .collect::<Vec<&NewsMeta>>();
+
+    let featured_albums = site_map
+        .albums
+        .iter()
+        .filter(|album| album.contributors.contains(&member.ascii_name))
+        .take(5)
+        .collect::<Vec<&AlbumMeta>>();
 
     let inner = html! {
         section #member-detail {
@@ -144,7 +157,7 @@ pub fn member_detail(
                 .member-featured-works {
                     h3 { "最近のポスト" }
                     .container {
-                        @for featured in featured_posts.iter().take(5) {
+                        @for featured in featured_posts.iter() {
                             (featured_post_detail(sack, featured)?)
                         }
                         @if featured_posts.is_empty() {
@@ -157,7 +170,23 @@ pub fn member_detail(
                     }
                 }
 
-                .back-button{
+                .member-featured-works {
+                    h3 { "最近のアルバム" }
+                    .container {
+                        @for featured in featured_albums.iter() {
+                            (featured_album_detail(sack, featured, namemap)?)
+                        }
+                        @if featured_albums.is_empty() {
+                            p .work-description style="text-align: center;" {
+                                em {
+                                    "アルバムがありません。"
+                                }
+                            }
+                        }
+                    }
+                }
+
+                .back-button  {
                     a href="../members.html" class="margin-top: 50px;" {
                         "メンバー一覧に戻る"
                     }
@@ -188,9 +217,9 @@ pub fn featured_work_item_detail(
                 p { (item.short.as_deref().unwrap_or_default()) }
             }
 
-            .back-button{
+            .click-button{
                 a href=(format!("/works/releases/{}.html", work_ref)) {
-                    "詳しく見る"
+                    p { "詳しく見る" }
                 }
             }
         }
@@ -201,16 +230,55 @@ pub fn featured_post_detail(
     sack: &Context<SiteData>,
     item: &NewsMeta,
 ) -> Result<Markup, RuntimeError> {
-    let post_ref = post_reference(item);
-
     Ok(html! {
-        .post-item-detail id=(post_ref) {
-            .post-picture-container {
-                img .post-thumb src=(post_thumbnail(sack, item)?);
+        .post-card style="width: 100%;" {
+            .member-profile-image .post-card-image {
+                img .post-img src=(post_thumbnail(sack, item)?) {}
             }
-            .post-details {
-                h4 { (item.title) }
-                p { (item.short) }
+            .post-info {
+                h3 .post-card-title style="text-align: start; margin-bottom: 0px;" {
+                    a href=(format!("/news/{}.html", post_reference(item))) {
+                        (item.title)
+                    }
+                }
+                p .member-role {
+                    (item.date)
+                }
+                p {
+                    (item.short)
+                }
+                .member-links {
+                    @for link in &item.sns_links {
+                        (sns_icon(sack, link.as_str())?)
+                    }
+                }
+            }
+        }
+    })
+}
+
+pub fn featured_album_detail(
+    sack: &Context<SiteData>,
+    album_meta: &AlbumMeta,
+    namemap: &HashMap<String, String>,
+) -> Result<Markup, RuntimeError> {
+    Ok(html! {
+        .post-card style="width: 100%;" {
+            .member-profile-image .post-card-image {
+                img .work-item-thumb src=(image(sack, format!("images/{}", &album_meta.front_cover))?) alt=(&album_meta.title) {}
+            }
+            .post-info {
+                h3 .post-card-title style="text-align: start; margin-bottom: 0px;" {
+                    a href=(format!("/news/{}.html", album_reference(&album_meta.title, &album_meta.front_cover))) {
+                        (album_meta.title)
+                    }
+                }
+                p .work-role {
+                    (album_meta.release_date)
+                }
+                p .member-role {
+                    (album_meta.contributors_str(namemap))
+                }
             }
         }
     })

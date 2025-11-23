@@ -205,11 +205,12 @@ pub fn build_site(build_id: u64, site_url: String) -> Result<(), hauchiwa::Hauch
                 let file_path = &post.file.file;
                 let post_meta = post.data;
 
-                if !member_ascii_to_name.contains_key(&post_meta.meta.author) {
-                        let error_str = format!("BUILD-{}: ファイル {}の内, メタデータフィルド`author`でエーラ発生: {} はメンバー中見つかりませんでした。 英語ネーム使うかどうか確認してください。", ctx.get_globals().data.build_id, file_path, &post_meta.meta.author);
+                if let Some(author) = &post_meta.meta.author
+                    && !member_ascii_to_name.contains_key(author) {
+                        let error_str = format!("BUILD-{}: ファイル {}の内, メタデータフィルド`author`でエーラ発生: {} はメンバー中見つかりませんでした。 英語ネーム使うかどうか確認してください。", ctx.get_globals().data.build_id, file_path, author);
                     error!("{}", &error_str);
                         return Err(RuntimeError::msg(error_str))
-                }
+                    }
             }
 
             info!(
@@ -257,8 +258,8 @@ pub fn build_site(build_id: u64, site_url: String) -> Result<(), hauchiwa::Hauch
             );
             let mut member_overview = vec![Page::html("members.html", member_overview(&ctx, &sitemap).map_err(|why| why.context("Build Member Overview /members.html"))?.into_string())];
             let mut member_detail = members.iter().map(|member_page| {
-                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, member_page.data, Sections::MemberProfile, &member_page.data.meta.ascii_name, format!("members/{}.html", &member_page.data.meta.ascii_name), |ctx, meta, sitemap, _, content| {
-                    member_detail(ctx, meta, sitemap, content)
+                render_metadata_and_final_page(&ctx, &environment, &sitemap, &member_ascii_to_name, member_page.data, Sections::MemberProfile, &member_page.data.meta.ascii_name, format!("members/{}.html", &member_page.data.meta.ascii_name), |ctx, meta, sitemap, namemap, content| {
+                    member_detail(ctx, meta, sitemap, namemap, content)
                 })
             }).collect::<Result<Vec<Page>, RuntimeError>>()?;
 

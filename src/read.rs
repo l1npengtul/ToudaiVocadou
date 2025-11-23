@@ -44,7 +44,7 @@ pub fn parse_post_meta(file: &str) -> Result<(NewsMeta, String), anyhow::Error> 
             header_image: raw_post.header_image,
             date: raw_post.date,
             short: new_short,
-            social_links: raw_post.social_links,
+            sns_links: raw_post.sns_links,
         },
         content,
     ))

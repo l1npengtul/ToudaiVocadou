@@ -5,7 +5,8 @@ use url::Url;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewsMeta {
     pub title: String,
-    pub author: String,
+    #[serde(default)]
+    pub author: Option<String>,
     #[serde(default)]
     pub header_image: Option<String>,
     pub date: Date,
@@ -14,13 +15,14 @@ pub struct NewsMeta {
     pub short: String,
 
     #[serde(default)]
-    pub social_links: Vec<Url>,
+    pub sns_links: Vec<Url>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RawNewsMeta {
     pub title: String,
-    pub author: String,
+    #[serde(default)]
+    pub author: Option<String>,
     #[serde(default)]
     pub header_image: Option<String>,
     pub date: Date,
@@ -29,5 +31,5 @@ pub struct RawNewsMeta {
     pub short: Option<String>,
 
     #[serde(default)]
-    pub social_links: Vec<Url>,
+    pub sns_links: Vec<Url>,
 }
