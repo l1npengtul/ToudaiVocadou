@@ -114,26 +114,28 @@ pub fn work_card(
 
     Ok(html! {
         .work-item {
-            .work-card {
-                h4 .member-info {
-                    a .member-link href=(format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author))){
-                        (work_meta.title)
-                    }
-                }
-                .work-thumbnail {
-                    img .work-item-thumb src=(thumbnail_link(sack, work_meta)?) alt=(work_meta.title) {}
-                }
-                .work-description {
-                    a href=(format!("/members/{}.html", work_meta.author)) {
-                        p .member-role {
-                            (author_name)
+            a .member-link href=(format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author))) {
+                .work-card {
+                    h4 .member-info {
+                        a .member-link href=(format!("/works/releases/{}.html", work_reference(&work_meta.title, &work_meta.author))){
+                            (work_meta.title)
                         }
                     }
-                    p .work-date {
-                        (work_meta.date)
+                    .work-thumbnail {
+                        img .work-item-thumb src=(thumbnail_link(sack, work_meta)?) alt=(work_meta.title) {}
                     }
-                    p {
-                        (work_meta.short.clone().unwrap_or_default())
+                    .work-description {
+                        a href=(format!("/members/{}.html", work_meta.author)) {
+                            p .member-role {
+                                (author_name)
+                            }
+                        }
+                        p .work-date {
+                            (work_meta.date)
+                        }
+                        p {
+                            (work_meta.short.clone().unwrap_or_default())
+                        }
                     }
                 }
             }
@@ -170,29 +172,33 @@ pub fn album_card(
     );
     Ok(html! {
         .work-item {
-            .work-card {
-                h4 .member-info {
-                    a href=(
-                        format!("/works/albums/{}.html", album_reference(&album_meta.title, &album_meta.front_cover))
-                    ) {
-                        (album_meta.title)
+            a .member-link href=(
+                format!("/works/albums/{}.html", album_reference(&album_meta.title, &album_meta.front_cover))
+            ) {
+                .work-card {
+                    h4 .member-info {
+                        a href=(
+                            format!("/works/albums/{}.html", album_reference(&album_meta.title, &album_meta.front_cover))
+                        ) {
+                            (album_meta.title)
+                        }
                     }
-                }
-                .work-thumbnail {
-                    img .work-item-thumb src=(image(sack, format!("images/{}", &album_meta.front_cover))?) alt=(&album_meta.title) {}
-                }
-                .work-description {
-                    p .member-role {
-                        (contribs)
+                    .work-thumbnail {
+                        img .work-item-thumb src=(image(sack, format!("images/{}", &album_meta.front_cover))?) alt=(&album_meta.title) {}
                     }
-                    p .work-date {
-                        (album_meta.release_date)
-                    }
-                    @if let Some(subtitle) = &album_meta.subtitle {
-                        p { (subtitle) }
-                    }
-                    p {
-                        (album_meta.short)
+                    .work-description {
+                        p .member-role {
+                            (contribs)
+                        }
+                        p .work-date {
+                            (album_meta.release_date)
+                        }
+                        @if let Some(subtitle) = &album_meta.subtitle {
+                            p { (subtitle) }
+                        }
+                        p {
+                            (album_meta.short)
+                        }
                     }
                 }
             }
@@ -243,6 +249,11 @@ pub fn album_detail(
                         p {
                             (album_meta.short)
                         }
+                        .member-links {
+                            @for link in &album_meta.sns_links {
+                                (sns_icon(sack, link.as_str())?)
+                            }
+                        }
                     }
                 }
             }
@@ -274,7 +285,7 @@ pub fn album_detail(
                                     @if track.external_author {
                                         (track.author)
                                     } @else {
-                                        a href=(format!("/members/{}.html",  (name_map.get(&track.author).ok_or(RuntimeError::msg("User does not exist in album"))?))) {
+                                        a href=(format!("/members/{}.html", &track.author)) {
                                             (name_map.get(&track.author).ok_or(RuntimeError::msg("User does not exist in album"))?)
                                         }
                                     }
@@ -331,12 +342,27 @@ pub fn album_detail(
                             .work-youtube-container {
                                 img .work-item-thumb src=(image(sack, format!("images/{}", &album_meta.front_cover))?) alt=(album_meta.title);
                             }
+                            @if album_meta.front_cover_illustrator_not_on_site {
+                                p {"イラスト: " (album_meta.front_cover_illustrator) }
+                            }
+                            @else {
+                                a href=(format!("/members/{}.html", album_meta.front_cover_illustrator)) {
+                                    p { "イラスト: " (name_map.get(&album_meta.front_cover_illustrator).ok_or(RuntimeError::msg("did not find front cover illustrator on site"))?) }
+                                }
+                            }
                         }
                         @for (header, imglnk) in &album_meta.other_covers {
                             .work-item-detail #(header) {
                                 h4 { (header) }
                                 .work-item-thumb {
-                                    img .img-placeholder src=(image(sack, imglnk)?) alt=(header);
+                                    img .img-placeholder src=(image(sack, &imglnk.link)?) alt=(header);
+                                }
+                                @if imglnk.illustrator_is_not_on_site {
+                                    p { "イラスト: " (imglnk.illustrator) }
+                                } @else {
+                                    a href=(format!("/members/{}.html", imglnk.illustrator)) {
+                                        p { "イラスト: " (name_map.get(&imglnk.illustrator).ok_or(RuntimeError::msg("did not find illustrator on site"))?) }
+                                    }
                                 }
                             }
                         }

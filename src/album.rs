@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use toml::value::Date;
+use url::Url;
 
 use crate::{metadata::Metadata, templates::partials::navbar::Sections};
 
@@ -21,14 +22,28 @@ pub struct AlbumMeta {
     pub crossfade_demonstration: Option<String>,
 
     pub front_cover: String,
+    pub front_cover_illustrator: String,
     #[serde(default)]
-    pub other_covers: HashMap<String, String>,
+    pub front_cover_illustrator_not_on_site: bool,
+    #[serde(default)]
+    pub other_covers: HashMap<String, Illustration>,
 
     #[serde(default)]
     pub playlist_link: Option<String>,
 
     #[serde(default)]
     pub tracklist: Vec<TracklistTrack>,
+
+    #[serde(default)]
+    pub sns_links: Vec<Url>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Illustration {
+    pub link: String,
+    pub illustrator: String,
+    #[serde(default)]
+    pub illustrator_is_not_on_site: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

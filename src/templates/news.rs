@@ -1,8 +1,9 @@
 use crate::news::NewsMeta;
 use crate::sitemap::SiteMap;
 use crate::templates::base::base;
+use crate::templates::functions::sns::sns_icon;
 use crate::templates::partials::navbar::Sections;
-use crate::util::shorten;
+use crate::util::{image, shorten};
 use crate::{SiteData, metadata::Metadata};
 use base64::Engine;
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
@@ -27,7 +28,7 @@ pub fn news_posts(
         }
 
         section #list {
-            .listcontainer {
+            .listcontainer .flex-container style="align-items: center;"{
                 @for post_meta in &site_map.news {
                     (post_card(sack, post_meta, name_map)?)
                 }
@@ -60,15 +61,15 @@ pub fn post_card(
     post_meta: &NewsMeta,
     name_map: &HashMap<String, String>,
 ) -> Result<Markup, RuntimeError> {
-    let author_name = name_map.get(&post_meta.author).ok_or(RuntimeError::msg("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info".to_string()))?;
+    let author_name = post_meta.author.as_ref().map(|author| name_map.get(author).ok_or(RuntimeError::msg("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info".to_string())));
 
     Ok(html! {
-        .item-card {
-            .item-image {
-                img class="img-placeholder" href=(post_thumbnail(context, post_meta)?) {}
+        .post-card {
+            .member-profile-image .post-card-image {
+                img .post-img src=(post_thumbnail(context, post_meta)?) {}
             }
-            .item-title {
-                h3 {
+            .post-info {
+                h3 .post-card-title {
                     a href=(format!("/news/{}.html", post_reference(post_meta))) {
                         (post_meta.title)
                     }
@@ -76,11 +77,18 @@ pub fn post_card(
                 p .member-role {
                     (post_meta.date)
                 }
-                p .member-department {
-                    (author_name)
+                @if let Some(author) = author_name && let Some(ascii_author) = &post_meta.author {
+                    a href=(format!("/members/{}.html", ascii_author)) { p { (author?) } }
+                } @else {
+                    p { "東大ボカロP同好会" }
                 }
                 p {
                     (post_meta.short)
+                }
+                .member-links {
+                    @for link in &post_meta.sns_links {
+                        (sns_icon(context, link.as_str())?)
+                    }
                 }
             }
         }
@@ -93,32 +101,44 @@ pub fn post_detail(
     content: &str,
     name_map: &HashMap<String, String>,
 ) -> Result<Markup, RuntimeError> {
-    let author_name = name_map.get(&post_meta.author).ok_or(RuntimeError::msg("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info".to_string()))?;
+    let author_name = post_meta.author.as_ref().map(|author| name_map.get(author).ok_or(RuntimeError::msg("Could not find author. Does the member page exist? Did you remember to type in the ascii name? Did you mistype it? Yell at peg for more info".to_string())));
 
     let inner = html! {
         section #post-detail {
             .member-detail-container {
-                h2 { (post_meta.title) }
-                p { (post_meta.date) }
-                a href=(format!("/members/{}.html", post_meta.author)) { p { (author_name) } }
                 .member-profile {
-                    .member-profile-image {
-                        img href=(post_thumbnail(sack, post_meta)?) alt="header image" { }
+                    .work-image {
+                        img src=(post_thumbnail(sack, post_meta)?) alt="header image" { }
                     }
-
+                    .member-profile-info {
+                        h2 { (post_meta.title) }
+                        p { (post_meta.date) }
+                        @if let Some(author) = author_name && let Some(ascii_author) = &post_meta.author {
+                            a href=(format!("/members/{}.html", ascii_author)) { p { (author?) } }
+                        } @else {
+                            p { "東大ボカロP同好会" }
+                        }
+                        .member-links {
+                            @for link in &post_meta.sns_links {
+                                (sns_icon(sack, link.as_str())?)
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        section #post-content .container{
-            .description {
-                (PreEscaped(content))
+        .member-works-container {
+            section #description .work-description {
+                .description {
+                    (PreEscaped(content))
+                }
             }
-        }
 
-        .back-button{
-            a href="../news.html" {
-                "ニュース目録一覧に戻る"
+            .back-button{
+                a href="../news.html" {
+                    "ニュース目録一覧に戻る"
+                }
             }
         }
     };
@@ -129,24 +149,29 @@ pub fn post_detail(
         canonical_link: format!("/news/{}.html", post_reference(post_meta)),
         section: Sections::NewsPost,
         description: Some(shorten(content)),
-        author: Some(post_meta.author.clone()),
+        author: post_meta.author.clone(),
         date: Some(post_meta.date.to_string()),
     };
 
     base(sack, &metadata, Some(&[]), inner)
 }
 
-pub fn post_thumbnail(_sack: &Context<SiteData>, item: &NewsMeta) -> Result<String, RuntimeError> {
+pub fn post_thumbnail(sack: &Context<SiteData>, item: &NewsMeta) -> Result<String, RuntimeError> {
     match &item.header_image {
-        Some(header) => Ok(format!("images/{}", header)),
-        None => Ok("images/gray.jpg".to_string()),
+        Some(header) => Ok(image(sack, format!("images/{}", header))?),
+        None => Ok(image(sack, "images/gray.jpg")?),
     }
 
     // TODO: Get thumbnail from SNS post.
 }
 
 pub fn post_reference(meta: &NewsMeta) -> String {
-    let authorhash = seahash::hash(meta.author.as_bytes()) as u128;
+    let authorhash = seahash::hash(
+        meta.author
+            .as_deref()
+            .unwrap_or("東大ボカロP同好会")
+            .as_bytes(),
+    ) as u128;
     let titlehash = seahash::hash(meta.title.as_bytes()) as u128;
     let combined = (authorhash << 64) + titlehash;
     BASE64_URL_SAFE_NO_PAD.encode(combined.to_le_bytes())
