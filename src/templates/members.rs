@@ -269,7 +269,7 @@ pub fn featured_album_detail(
             }
             .post-info {
                 h3 .post-card-title style="text-align: start; margin-bottom: 0px;" {
-                    a href=(format!("/news/{}.html", album_reference(&album_meta.title, &album_meta.front_cover))) {
+                    a href=(format!("/works/albums/{}.html", album_reference(&album_meta.title, &album_meta.front_cover))) {
                         (album_meta.title)
                     }
                 }
