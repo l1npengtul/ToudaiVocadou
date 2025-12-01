@@ -47,7 +47,7 @@ impl FromStr for SocialLinkType {
         let domain = url.domain().ok_or(Error::msg("Bad URL"))?;
         let url_type = match domain {
             "twitter.com" => SocialLinkType::Twitter,
-            "x.com" => SocialLinkType::Xitter,
+            "x.com" => SocialLinkType::Twitter,
             "bsky.app" => SocialLinkType::Bluesky,
             "youtube.com" | "www.youtube.com" => SocialLinkType::Youtube,
             "soundcloud.com" => SocialLinkType::Soundcloud,
