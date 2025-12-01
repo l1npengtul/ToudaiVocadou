@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use toml::value::Date;
-use url::Url;
 
 use crate::{metadata::Metadata, templates::partials::navbar::Sections};
 
@@ -35,7 +34,7 @@ pub struct AlbumMeta {
     pub tracklist: Vec<TracklistTrack>,
 
     #[serde(default)]
-    pub sns_links: Vec<Url>,
+    pub sns_links: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -185,7 +185,7 @@ section h2 {
 
 .img-placeholder {
     background-color: #e0e0e0;
-    height: 250px;
+    /* height: 250px; */
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -282,6 +282,7 @@ section h2 {
     flex-direction: column;
     flex-grow: 1;
     display: flex;
+    flex-wrap: wrap;
 }
 
 .member-info h3 {
@@ -309,6 +310,7 @@ section h2 {
     display: flex;
     gap: 10px;
     margin-top: auto;
+    flex-wrap: wrap;
 }
 
 .member-links a {
@@ -366,6 +368,7 @@ section h2 {
     flex: 1;
     min-width: 300px;
     display: flex;
+    flex-wrap: wrap;
     flex-direction: column;
 }
 
@@ -492,6 +495,7 @@ section h2 {
 
 .full-height-flex {
     display: flex;
+    flex-wrap: wrap;
     flex-direction: column;
     flex-basis: 100%;
     flex: 1;
@@ -545,6 +549,7 @@ section h2 {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
     height: 360px;
     display: flex;
+    flex-wrap: wrap;
     flex-direction: column;
     gap: 0.5em;
 }
@@ -573,6 +578,7 @@ footer .container {
 
 .social-links {
     display: flex;
+    flex-wrap: wrap;
     gap: 15px;
 }
 
@@ -693,6 +699,7 @@ footer .container {
     display: flex;
     justify-content: center;
     flex-direction: row;
+    flex-wrap: wrap;
 }
 
 .work-item {
@@ -704,6 +711,7 @@ footer .container {
 .work-card {
     display: flex;
     flex-direction: column;
+    flex-wrap: wrap;
 }
 
 /* 作品紹介セクション */
@@ -730,6 +738,7 @@ footer .container {
 
 .work-detail {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     flex-direction: row;
     gap: 30px;
@@ -751,6 +760,7 @@ footer .container {
     flex: 1;
     min-width: 300px;
     display: flex;
+    flex-wrap: wrap;
     flex-direction: column;
 }
 
@@ -781,6 +791,7 @@ footer .container {
 
 .tracklist-list {
     display: flex;
+    flex-wrap: wrap;
     flex-direction: column;
     justify-content: flex-start;
     width: 60%;
@@ -819,6 +830,7 @@ footer .container {
 
 .post-card {
     display: flex;
+    flex-wrap: wrap;
     flex-direction: row;
     gap: 2em;
     background-color: white;
@@ -831,6 +843,7 @@ footer .container {
 
 .post-info {
     display: flex;
+    flex-wrap: wrap;
     flex-direction: column;
 }
 
@@ -860,6 +873,15 @@ body > section {
 .post-card-image {
     background-color: #999;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
+}
+
+.work-illustration-container {
+    position: relative;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
     justify-content: center;
 }

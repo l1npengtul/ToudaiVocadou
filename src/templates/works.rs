@@ -339,7 +339,7 @@ pub fn album_detail(
                     .container {
                         .work-item-detail #frontcover {
                             h4 { "フロントカーバー" }
-                            .work-youtube-container {
+                            .work-illustration-container {
                                 img .work-item-thumb src=(image(sack, format!("images/{}", &album_meta.front_cover))?) alt=(album_meta.title);
                             }
                             @if album_meta.front_cover_illustrator_not_on_site {
@@ -354,8 +354,8 @@ pub fn album_detail(
                         @for (header, imglnk) in &album_meta.other_covers {
                             .work-item-detail #(header) {
                                 h4 { (header) }
-                                .work-item-thumb {
-                                    img .img-placeholder src=(image(sack, &imglnk.link)?) alt=(header);
+                                .work-illustration-container {
+                                    img .img-placeholder src=(image(sack, format!("images/{}", imglnk.link))?) alt=(header);
                                 }
                                 @if imglnk.illustrator_is_not_on_site {
                                     p { "イラスト: " (imglnk.illustrator) }
